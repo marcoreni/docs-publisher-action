@@ -1,6 +1,6 @@
 {
   "hooks": {
-    "after:init": ["npm run format", "npm run build"],
+    "after:init": ["npm run format", "npm run build"]
   }, 
   "git": {
     "commitMessage": "v${version}",
