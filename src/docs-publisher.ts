@@ -49,6 +49,12 @@ async function run() {
     const deploymentBranch = core.getInput('deployment-branch');
     const version = await getVersion(core.getInput('version-strategy'));
 
+    core.info(`Inputs:
+      - command: ${command},
+      - docs-path: ${docsRelativePath},
+      - deployment-branch: ${deploymentBranch},
+    `);
+
     const repository = github.context.repo.repo;
     const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}`;
 
@@ -68,7 +74,7 @@ async function run() {
     }
 
     const currentPath = process.cwd();
-    const docsPath = path.join(currentPath, docsRelativePath);
+    const docsPath = path.join(currentPath, docsRelativePath, '/');
 
     // 2- Create a temporary dir
     const tempPath = await fs.mkdtempSync(path.join(tmpdir(), `${repository}-${deploymentBranch}`));
