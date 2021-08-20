@@ -16176,6 +16176,7 @@ function run() {
             const versionedDocsPath = external_path_.join(DOCS_FOLDER, version);
             external_fs_.mkdirSync(external_path_.join(DOCS_FOLDER, version));
             // 7- Copy the files to the new version
+            core.info(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
             yield (0,io.cp)(docsPath, versionedDocsPath, { recursive: true });
             // 8- Create the new version inside versions.json
             metadataFile.versions.unshift({
