@@ -79,9 +79,11 @@ async function run() {
     process.chdir(tempPath);
 
     // 4- Switch to the deployment branch
-    try {
-      await exec(`git switch ${deploymentBranch}`);
-    } catch (err) {
+    if (
+      (await exec(`git switch ${deploymentBranch}`, undefined, {
+        ignoreReturnCode: true,
+      })) !== 0
+    ) {
       // If the switch fails, we will create a new orphan branch
       await exec(`git switch --orphan ${deploymentBranch}`);
 
