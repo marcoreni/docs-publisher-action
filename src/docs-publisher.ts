@@ -8,7 +8,7 @@ import * as path from 'path';
 
 import homepageTemplate from './homepage.hbs';
 
-Handlebars.registerHelper('prettifyDate', function (timestamp) {
+Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
   return new Date(timestamp).toISOString();
 });
 
@@ -24,7 +24,7 @@ type MetadataFile = {
 };
 
 // Taken from https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts#L26 and adapted
-function shellExecLog(cmd) {
+function shellExecLog(cmd: string) {
   try {
     const result = shell.exec(cmd);
     core.debug(`CMD: ${cmd} (code: ${result.code})`);
