@@ -64,4 +64,4 @@ export default `<!DOCTYPE html>
   </main>
   <!--Main layout-->
   </body>
-</html>`
+</html>`;

@@ -21964,8 +21964,8 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 
-lib.registerHelper("prettifyDate", function (timestamp) {
-    return (new Date(timestamp)).toISOString();
+lib.registerHelper('prettifyDate', function (timestamp) {
+    return new Date(timestamp).toISOString();
 });
 const DOCS_FOLDER = 'docs';
 const METADATA_FILE = 'metadata.json';
@@ -22052,9 +22052,9 @@ function run() {
             // 7- Copy the files to the new version
             yield shell.cp('-r', docsPath, versionedDocsPath);
             // 8- Create the new version inside versions.json
-            (metadataFile.versions).unshift({
+            metadataFile.versions.unshift({
                 id: version,
-                releaseTimestamp: (new Date()).getTime(),
+                releaseTimestamp: new Date().getTime(),
             });
             // 9- TBD: cleanup old versions?
             // 10- Write back the metadata file
