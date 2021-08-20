@@ -16101,35 +16101,9 @@ lib.registerHelper('prettifyDate', function (timestamp) {
 });
 const DOCS_FOLDER = 'docs';
 const METADATA_FILE = 'metadata.json';
-function shellExecLog(cmd) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const resultCode = yield (0,exec.exec)(cmd);
-            core.info(`CMD: ${cmd} (code: ${resultCode})`);
-            return resultCode;
-        }
-        catch (e) {
-            core.error(`CMD: ${cmd} - error: ${e.message}`);
-            throw e;
-        }
-    });
-}
-function shellExecLogWithOutput(cmd) {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            const result = yield (0,exec.getExecOutput)(cmd);
-            core.info(`CMD: ${cmd} (code: ${result.exitCode})`);
-            return result;
-        }
-        catch (e) {
-            core.error(`CMD: ${cmd} - error: ${e.message}`);
-            throw e;
-        }
-    });
-}
 function execOutput(cmd) {
     return __awaiter(this, void 0, void 0, function* () {
-        const result = yield shellExecLogWithOutput(cmd);
+        const result = yield (0,exec.getExecOutput)(cmd);
         return result.stdout.trim();
     });
 }
@@ -16148,7 +16122,6 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Inputs
-            const githubToken = core.getInput('token');
             const command = core.getInput('docs-command');
             const docsRelativePath = core.getInput('docs-path');
             const currentCommit = process.env.GITHUB_SHA;
@@ -16156,13 +16129,16 @@ function run() {
             const deploymentBranch = core.getInput('deployment-branch');
             const version = yield getVersion(core.getInput('version-strategy'));
             const repository = github.context.repo.repo;
-            const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}.git`;
+            const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}`;
+            const gitUsername = 'x-access-token';
+            const gitPassword = core.getInput('token');
+            const gitRepositoryUrl = `https://${gitUsername}:${gitPassword}@github.com/${github.context.repo.owner}/${repository}.git`;
             if (currentBranch === deploymentBranch) {
                 throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
             }
             // 1- Run the command to create the documentation
             try {
-                yield shellExecLog(command);
+                yield (0,exec.exec)(command);
             }
             catch (error) {
                 throw new Error(`Documentation creation failed with error: ${error.message}`);
@@ -16171,15 +16147,15 @@ function run() {
             const docsPath = external_path_.join(currentPath, docsRelativePath);
             // 2- Create a temporary dir
             const tempPath = yield external_fs_.mkdtempSync(external_path_.join((0,external_os_.tmpdir)(), `${repository}-${deploymentBranch}`));
-            if ((yield shellExecLog(`git clone ${repositoryUrl} ${tempPath}`)) !== 0) {
+            if ((yield (0,exec.exec)(`git clone ${gitRepositoryUrl} ${tempPath}`)) !== 0) {
                 throw new Error(`Running "git clone" command in "${tempPath}" failed.`);
             }
             // 3- Enter the temporary dir
             process.chdir(tempPath);
             // 4- Switch to the deployment branch
-            if ((yield shellExecLog(`git switch ${deploymentBranch}`)) !== 0) {
+            if ((yield (0,exec.exec)(`git switch ${deploymentBranch}`)) !== 0) {
                 // If the switch fails, we will create a new orphan branch
-                if ((yield shellExecLog(`git switch --orphan ${deploymentBranch}`)) !== 0) {
+                if ((yield (0,exec.exec)(`git switch --orphan ${deploymentBranch}`)) !== 0) {
                     throw new Error(`Unable to switch to the "${deploymentBranch}" branch.`);
                 }
                 else {
@@ -16224,10 +16200,12 @@ function run() {
             const homepage = homepageCompiler(data);
             external_fs_.writeFileSync('index.html', homepage, 'utf-8');
             // 12- Commit && push
-            yield shellExecLog('git add -A');
+            yield (0,exec.exec)('git config --local user.name "gh-actions"');
+            yield (0,exec.exec)('git config --local user.email "gh-actions@github.com"');
+            yield (0,exec.exec)('git add -A');
             const commitMessage = `Deploy docs - based on ${currentCommit}`;
-            yield shellExecLog(`git commit -m ${commitMessage}`);
-            yield shellExecLog(`git push --set-upstream origin ${deploymentBranch}`);
+            yield (0,exec.exec)(`git commit -m ${commitMessage}`);
+            yield (0,exec.exec)(`git push --set-upstream origin ${deploymentBranch}`);
         }
         catch (err) {
             core.setFailed(err.message);
