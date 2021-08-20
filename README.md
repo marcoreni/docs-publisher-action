@@ -1,7 +1,6 @@
 <!-- omit in toc -->
 # Docs publisher action
 
-- [Intro](#intro)
 - [Inputs](#inputs)
   - [`deployment-branch`](#deployment-branch)
   - [`docs-command`](#docs-command)
@@ -12,15 +11,13 @@
   - [Release a new version](#release-a-new-version)
 - [TODO](#todo)
 
-## Intro
-
 This action creates a documentation site with versioning on a specific branch.  
 The target branch can then be used with Github Pages.
 
 In order to use this action, you should have:
 
-1- A command that creates the documentation in a specific, non changing path
-2- (Optional) a CHANGELOG.md file
+1. A command that creates the documentation in a specific, non changing path
+2. (Optional) a CHANGELOG.md file
 
 At the moment, this action can only be used with git tags, so your workflow should have:
 
@@ -64,7 +61,7 @@ steps:
   with:
     node-version: '14'
 - run: npm install
-- uses: marcoreni/docs-publisher-action@main
+- uses: marcoreni/docs-publisher-action@v0.0.1
   with:
     deployment-branch: 'gh-pages'
     docs-command: 'npm install && npm run docs'
