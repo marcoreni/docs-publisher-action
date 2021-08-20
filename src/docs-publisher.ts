@@ -73,29 +73,27 @@ async function run() {
     // 2- Create a temporary dir
     const tempPath = await fs.mkdtempSync(path.join(tmpdir(), `${repository}-${deploymentBranch}`));
 
-    if ((await exec(`git clone ${gitRepositoryUrl} ${tempPath}`)) !== 0) {
-      throw new Error(`Running "git clone" command in "${tempPath}" failed.`);
-    }
+    await exec(`git clone ${gitRepositoryUrl} ${tempPath}`);
 
     // 3- Enter the temporary dir
     process.chdir(tempPath);
 
     // 4- Switch to the deployment branch
-    if ((await exec(`git switch ${deploymentBranch}`)) !== 0) {
+    try {
+      await exec(`git switch ${deploymentBranch}`);
+    } catch (err) {
       // If the switch fails, we will create a new orphan branch
-      if ((await exec(`git switch --orphan ${deploymentBranch}`)) !== 0) {
-        throw new Error(`Unable to switch to the "${deploymentBranch}" branch.`);
-      } else {
-        // Initialize stuff
-        fs.mkdirSync(DOCS_FOLDER);
+      await exec(`git switch --orphan ${deploymentBranch}`);
 
-        const emptyMetadata: MetadataFile = {
-          actionVersion: 1,
-          versions: [],
-        };
+      // Then we initialize stuff
+      fs.mkdirSync(DOCS_FOLDER);
 
-        fs.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
-      }
+      const emptyMetadata: MetadataFile = {
+        actionVersion: 1,
+        versions: [],
+      };
+
+      fs.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
     }
 
     // Check if this branch is managed by this action.
