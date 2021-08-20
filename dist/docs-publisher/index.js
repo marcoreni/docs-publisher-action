@@ -16044,8 +16044,8 @@ var external_path_ = __nccwpck_require__(5622);
             <h1 class="mb-3">{{projectName}}</h1>
             <a class="btn btn-outline-light btn-lg m-2" href="{{repositoryUrl}}" role="button"
               rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
-            <a class="btn btn-outline-light btn-lg m-2" href="./{{latestVersion}}/"
-              role="button">Latest docs</a>
+            <a class="btn btn-outline-light btn-lg m-2" href="./{{docsPathPrefix}}/{{latestVersion}}/"
+              role="button">Latest version ({{latestVersion}}) docs</a>
           </div>
         </div>
       </div>
@@ -16064,7 +16064,7 @@ var external_path_ = __nccwpck_require__(5622);
           <div class="col-xs-12 text-right">
             <ul class="list-group list-group-flush">
               {{#each versions}}
-                <li class="list-group-item"><a class="text-body" href="./{{this.id}}/">{{this.id}} (released at: {{prettifyDate this.releaseTimestamp}})</a></li>
+                <li class="list-group-item"><a class="text-body" href="./{{docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
               {{/each}}
             </ul>
           </div>
@@ -16097,7 +16097,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 lib.registerHelper('prettifyDate', function (timestamp) {
-    return new Date(timestamp).toISOString();
+    return new Date(timestamp).toLocaleString();
 });
 const DOCS_FOLDER = 'docs';
 const METADATA_FILE = 'metadata.json';
@@ -16149,7 +16149,10 @@ function run() {
                 throw new Error(`Documentation creation failed with error: ${error.message}`);
             }
             const currentPath = process.cwd();
-            const docsPath = external_path_.join(currentPath, docsRelativePath, '/');
+            let docsPath = external_path_.join(currentPath, docsRelativePath);
+            // We need to make sure that we do not have an ending slash
+            if (docsPath.endsWith('/'))
+                docsPath = docsPath.substr(0, docsPath.length - 1);
             // 2- Create a temporary dir
             const tempPath = yield external_fs_.mkdtempSync(external_path_.join((0,external_os_.tmpdir)(), `${repository}-${deploymentBranch}`));
             yield (0,exec.exec)(`git clone ${gitRepositoryUrl} ${tempPath}`);
@@ -16196,6 +16199,7 @@ function run() {
                 projectName: repository,
                 repositoryUrl,
                 latestVersion: version,
+                docsPathPrefix: DOCS_FOLDER,
                 versions: metadataFile.versions,
             };
             const homepageCompiler = lib.compile(homepage_hbs, { noEscape: true });
