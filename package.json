@@ -1,6 +1,6 @@
 {
   "name": "docs-publisher-action",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "docs publisher action",
   "main": "lib/docs-publisher.js",
   "private": true,
