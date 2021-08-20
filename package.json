@@ -5,13 +5,11 @@
   "main": "lib/docs-publisher.js",
   "private": true,
   "scripts": {
-    "build:old": "rm -rf dist && ncc build -o dist/docs-publisher src/docs-publisher.ts --license licenses.txt",
-    "build": "tsc",
-    "package": "ncc build -o dist/docs-publisher --license licenses.txt",
+    "build": "rm -rf dist && ncc build -o dist/docs-publisher src/docs-publisher.ts --license licenses.txt",
     "format": "prettier --write src/**/*.ts",
     "format-check": "prettier --check src/**/*.ts",
     "release": "release-it --only-version",
-    "all": "npm run format && npm run build && npm run package"
+    "all": "npm run format && npm run build"
   },
   "repository": {
     "type": "git",

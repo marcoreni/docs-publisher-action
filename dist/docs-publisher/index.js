@@ -1,249 +1,6 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 7975:
-/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
-
-"use strict";
-
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__nccwpck_require__(2186));
-const github = __importStar(__nccwpck_require__(5438));
-const Handlebars = __importStar(__nccwpck_require__(7492));
-const shell = __importStar(__nccwpck_require__(3516));
-const os = __importStar(__nccwpck_require__(2087));
-const fs = __importStar(__nccwpck_require__(5747));
-const path = __importStar(__nccwpck_require__(5622));
-const homepage_hbs_1 = __importDefault(__nccwpck_require__(534));
-Handlebars.registerHelper('prettifyDate', function (timestamp) {
-    return new Date(timestamp).toISOString();
-});
-const DOCS_FOLDER = 'docs';
-const METADATA_FILE = 'metadata.json';
-// Taken from https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts#L26 and adapted
-function shellExecLog(cmd) {
-    try {
-        const result = shell.exec(cmd);
-        core.debug(`CMD: ${cmd} (code: ${result.code})`);
-        return result;
-    }
-    catch (e) {
-        core.error(`CMD: ${cmd}`);
-        throw e;
-    }
-}
-function getVersion(versionStrategy) {
-    if (versionStrategy === 'tag') {
-        return shellExecLog('git describe --tags').stdout.trim();
-    }
-    throw new Error(`Unsupported versionStrategy ${versionStrategy}`);
-}
-/**
- * NOTE: the following function is inspired by https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts
- */
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        try {
-            // Inputs
-            const githubToken = core.getInput('token');
-            const command = core.getInput('docs-command');
-            const docsRelativePath = core.getInput('docs-path');
-            const currentCommit = process.env.GITHUB_SHA;
-            const currentBranch = shell.exec(`git branch --show-current`).stdout.trim();
-            const deploymentBranch = core.getInput('deployment-branch');
-            const version = getVersion(core.getInput('version-strategy'));
-            const repository = github.context.repo.repo;
-            const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}.git`;
-            if (currentBranch === deploymentBranch) {
-                throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
-            }
-            // 1- Run the command to create the documentation
-            try {
-                shellExecLog(command);
-            }
-            catch (error) {
-                throw new Error(`Documentation creation failed with error: ${error.message}`);
-            }
-            const currentPath = shell.pwd();
-            const docsPath = path.join(currentPath, docsRelativePath);
-            // 2- Create a temporary dir
-            const tempPath = yield fs.mkdtempSync(path.join(os.tmpdir(), `${repository}-${deploymentBranch}`));
-            if (shellExecLog(`git clone ${repositoryUrl} ${tempPath}`).code !== 0) {
-                throw new Error(`Running "git clone" command in "${tempPath}" failed.`);
-            }
-            // 3- Enter the temporary dir
-            shell.cd(tempPath);
-            // 4- Switch to the deployment branch
-            if (shellExecLog(`git switch ${deploymentBranch}`).code !== 0) {
-                // If the switch fails, we will create a new orphan branch
-                if (shellExecLog(`git switch --orphan ${deploymentBranch}`).code !== 0) {
-                    throw new Error(`Unable to switch to the "${deploymentBranch}" branch.`);
-                }
-                else {
-                    // Initialize stuff
-                    fs.mkdirSync(DOCS_FOLDER);
-                    const emptyMetadata = {
-                        actionVersion: 1,
-                        versions: [],
-                    };
-                    fs.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
-                }
-            }
-            // Check if this branch is managed by this action.
-            if (!fs.existsSync(METADATA_FILE)) {
-                throw new Error(`The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`);
-            }
-            const metadataFile = JSON.parse(fs.readFileSync(METADATA_FILE, 'utf8'));
-            if (!metadataFile.actionVersion) {
-                throw new Error(`The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`);
-            }
-            // 6- Create a new version based on the version variable.
-            const versionedDocsPath = path.join(DOCS_FOLDER, version);
-            fs.mkdirSync(path.join(DOCS_FOLDER, version));
-            // 7- Copy the files to the new version
-            yield shell.cp('-r', docsPath, versionedDocsPath);
-            // 8- Create the new version inside versions.json
-            metadataFile.versions.unshift({
-                id: version,
-                releaseTimestamp: new Date().getTime(),
-            });
-            // 9- TBD: cleanup old versions?
-            // 10- Write back the metadata file
-            fs.writeFileSync(METADATA_FILE, JSON.stringify(metadataFile), 'utf-8');
-            // 11 - Compile index.html
-            const data = {
-                projectName: repository,
-                repositoryUrl,
-                latestVersion: version,
-                versions: metadataFile.versions,
-            };
-            const homepageCompiler = Handlebars.compile(homepage_hbs_1.default, { noEscape: true });
-            const homepage = homepageCompiler(data);
-            fs.writeFileSync('index.html', homepage, 'utf-8');
-            // 12- Commit && push
-            shellExecLog('git add -A');
-            const commitMessage = `Deploy docs - based on ${currentCommit}`;
-            shellExecLog(`git commit -m ${commitMessage}`);
-            shellExecLog(`git push --set-upstream origin ${deploymentBranch}`);
-        }
-        catch (err) {
-            core.setFailed(err.message);
-        }
-    });
-}
-run();
-
-
-/***/ }),
-
-/***/ 534:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.default = `<!DOCTYPE html>
-<html>
-  <head>
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" />
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
-    <!-- MDB -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.6.0/mdb.min.css" rel="stylesheet" />
-  </head>
-  <body>
-
-<body>
-  <!--Main Navigation-->
-  <header>
-    <style>
-      #intro {
-        height: 40vh !important;
-      }
-    </style>
-
-    <!-- Background image -->
-    <div id="intro" class="bg-image vh-100 shadow-1-strong">
-      <div class="mask" style="
-            background: linear-gradient(
-              45deg,
-              rgba(29, 236, 197, 0.7),
-              rgba(91, 14, 214, 0.7) 100%
-            );
-          ">
-        <div class="container d-flex align-items-center justify-content-center text-center h-100">
-          <div class="text-white">
-            <h1 class="mb-3">{{projectName}}</h1>
-            <a class="btn btn-outline-light btn-lg m-2" href="{{repositoryUrl}}" role="button"
-              rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
-            <a class="btn btn-outline-light btn-lg m-2" href="./{{latestVersion}}/"
-              role="button">Latest docs</a>
-          </div>
-        </div>
-      </div>
-    </div>
-    <!-- Background image -->
-  </header>
-  <!--Main Navigation-->
-
-  <!--Main layout-->
-  <main class="mt-5">
-    <div class="container docs">
-      <!--Section: Content-->
-      <section>
-        <h4 class="mb-1 text-center text-dark"><strong>Docs</strong></h4>
-        <div class="row">
-          <div class="col-xs-12 text-right">
-            <ul class="list-group list-group-flush">
-              {{#each versions}}
-                <li class="list-group-item"><a class="text-body" href="./{{this.id}}/">{{this.id}} (released at: {{prettifyDate this.releaseTimestamp}})</a></li>
-              {{/each}}
-            </ul>
-          </div>
-        </div>
-      </section>
-      <!--Section: Content-->
-    </div>
-  </main>
-  <!--Main layout-->
-  </body>
-</html>`;
-
-
-/***/ }),
-
 /***/ 7351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -22074,6 +21831,17 @@ module.exports = require("zlib");
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/node module decorator */
 /******/ 	(() => {
 /******/ 		__nccwpck_require__.nmd = (module) => {
@@ -22088,12 +21856,234 @@ module.exports = require("zlib");
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
-/******/ 	
-/******/ 	// startup
-/******/ 	// Load entry module and return exports
-/******/ 	// This entry module is referenced by other modules so it can't be inlined
-/******/ 	var __webpack_exports__ = __nccwpck_require__(7975);
-/******/ 	module.exports = __webpack_exports__;
-/******/ 	
+var __webpack_exports__ = {};
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+// ESM COMPAT FLAG
+__nccwpck_require__.r(__webpack_exports__);
+
+// EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
+var core = __nccwpck_require__(2186);
+// EXTERNAL MODULE: ./node_modules/@actions/github/lib/github.js
+var github = __nccwpck_require__(5438);
+// EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
+var lib = __nccwpck_require__(7492);
+// EXTERNAL MODULE: ./node_modules/shelljs/shell.js
+var shell = __nccwpck_require__(3516);
+// EXTERNAL MODULE: external "os"
+var external_os_ = __nccwpck_require__(2087);
+// EXTERNAL MODULE: external "fs"
+var external_fs_ = __nccwpck_require__(5747);
+// EXTERNAL MODULE: external "path"
+var external_path_ = __nccwpck_require__(5622);
+;// CONCATENATED MODULE: ./src/homepage.hbs.ts
+/* harmony default export */ const homepage_hbs = (`<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" rel="stylesheet" />
+    <!-- MDB -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/3.6.0/mdb.min.css" rel="stylesheet" />
+  </head>
+  <body>
+
+<body>
+  <!--Main Navigation-->
+  <header>
+    <style>
+      #intro {
+        height: 40vh !important;
+      }
+    </style>
+
+    <!-- Background image -->
+    <div id="intro" class="bg-image vh-100 shadow-1-strong">
+      <div class="mask" style="
+            background: linear-gradient(
+              45deg,
+              rgba(29, 236, 197, 0.7),
+              rgba(91, 14, 214, 0.7) 100%
+            );
+          ">
+        <div class="container d-flex align-items-center justify-content-center text-center h-100">
+          <div class="text-white">
+            <h1 class="mb-3">{{projectName}}</h1>
+            <a class="btn btn-outline-light btn-lg m-2" href="{{repositoryUrl}}" role="button"
+              rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
+            <a class="btn btn-outline-light btn-lg m-2" href="./{{latestVersion}}/"
+              role="button">Latest docs</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Background image -->
+  </header>
+  <!--Main Navigation-->
+
+  <!--Main layout-->
+  <main class="mt-5">
+    <div class="container docs">
+      <!--Section: Content-->
+      <section>
+        <h4 class="mb-1 text-center text-dark"><strong>Docs</strong></h4>
+        <div class="row">
+          <div class="col-xs-12 text-right">
+            <ul class="list-group list-group-flush">
+              {{#each versions}}
+                <li class="list-group-item"><a class="text-body" href="./{{this.id}}/">{{this.id}} (released at: {{prettifyDate this.releaseTimestamp}})</a></li>
+              {{/each}}
+            </ul>
+          </div>
+        </div>
+      </section>
+      <!--Section: Content-->
+    </div>
+  </main>
+  <!--Main layout-->
+  </body>
+</html>`);
+
+;// CONCATENATED MODULE: ./src/docs-publisher.ts
+var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+
+
+
+
+
+
+
+
+lib.registerHelper('prettifyDate', function (timestamp) {
+    return new Date(timestamp).toISOString();
+});
+const DOCS_FOLDER = 'docs';
+const METADATA_FILE = 'metadata.json';
+// Taken from https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts#L26 and adapted
+function shellExecLog(cmd) {
+    try {
+        const result = shell.exec(cmd);
+        core.debug(`CMD: ${cmd} (code: ${result.code})`);
+        return result;
+    }
+    catch (e) {
+        core.error(`CMD: ${cmd}`);
+        throw e;
+    }
+}
+function getVersion(versionStrategy) {
+    if (versionStrategy === 'tag') {
+        return shellExecLog('git describe --tags').stdout.trim();
+    }
+    throw new Error(`Unsupported versionStrategy ${versionStrategy}`);
+}
+/**
+ * NOTE: the following function is inspired by https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts
+ */
+function run() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            // Inputs
+            const githubToken = core.getInput('token');
+            const command = core.getInput('docs-command');
+            const docsRelativePath = core.getInput('docs-path');
+            const currentCommit = process.env.GITHUB_SHA;
+            const currentBranch = shell.exec(`git branch --show-current`).stdout.trim();
+            const deploymentBranch = core.getInput('deployment-branch');
+            const version = getVersion(core.getInput('version-strategy'));
+            const repository = github.context.repo.repo;
+            const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}.git`;
+            if (currentBranch === deploymentBranch) {
+                throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
+            }
+            // 1- Run the command to create the documentation
+            try {
+                shellExecLog(command);
+            }
+            catch (error) {
+                throw new Error(`Documentation creation failed with error: ${error.message}`);
+            }
+            const currentPath = shell.pwd();
+            const docsPath = external_path_.join(currentPath, docsRelativePath);
+            // 2- Create a temporary dir
+            const tempPath = yield external_fs_.mkdtempSync(external_path_.join(external_os_.tmpdir(), `${repository}-${deploymentBranch}`));
+            if (shellExecLog(`git clone ${repositoryUrl} ${tempPath}`).code !== 0) {
+                throw new Error(`Running "git clone" command in "${tempPath}" failed.`);
+            }
+            // 3- Enter the temporary dir
+            shell.cd(tempPath);
+            // 4- Switch to the deployment branch
+            if (shellExecLog(`git switch ${deploymentBranch}`).code !== 0) {
+                // If the switch fails, we will create a new orphan branch
+                if (shellExecLog(`git switch --orphan ${deploymentBranch}`).code !== 0) {
+                    throw new Error(`Unable to switch to the "${deploymentBranch}" branch.`);
+                }
+                else {
+                    // Initialize stuff
+                    external_fs_.mkdirSync(DOCS_FOLDER);
+                    const emptyMetadata = {
+                        actionVersion: 1,
+                        versions: [],
+                    };
+                    external_fs_.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
+                }
+            }
+            // Check if this branch is managed by this action.
+            if (!external_fs_.existsSync(METADATA_FILE)) {
+                throw new Error(`The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`);
+            }
+            const metadataFile = JSON.parse(external_fs_.readFileSync(METADATA_FILE, 'utf8'));
+            if (!metadataFile.actionVersion) {
+                throw new Error(`The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`);
+            }
+            // 6- Create a new version based on the version variable.
+            const versionedDocsPath = external_path_.join(DOCS_FOLDER, version);
+            external_fs_.mkdirSync(external_path_.join(DOCS_FOLDER, version));
+            // 7- Copy the files to the new version
+            yield shell.cp('-r', docsPath, versionedDocsPath);
+            // 8- Create the new version inside versions.json
+            metadataFile.versions.unshift({
+                id: version,
+                releaseTimestamp: new Date().getTime(),
+            });
+            // 9- TBD: cleanup old versions?
+            // 10- Write back the metadata file
+            external_fs_.writeFileSync(METADATA_FILE, JSON.stringify(metadataFile), 'utf-8');
+            // 11 - Compile index.html
+            const data = {
+                projectName: repository,
+                repositoryUrl,
+                latestVersion: version,
+                versions: metadataFile.versions,
+            };
+            const homepageCompiler = lib.compile(homepage_hbs, { noEscape: true });
+            const homepage = homepageCompiler(data);
+            external_fs_.writeFileSync('index.html', homepage, 'utf-8');
+            // 12- Commit && push
+            shellExecLog('git add -A');
+            const commitMessage = `Deploy docs - based on ${currentCommit}`;
+            shellExecLog(`git commit -m ${commitMessage}`);
+            shellExecLog(`git push --set-upstream origin ${deploymentBranch}`);
+        }
+        catch (err) {
+            core.setFailed(err.message);
+        }
+    });
+}
+run();
+
+})();
+
+module.exports = __webpack_exports__;
 /******/ })()
 ;
