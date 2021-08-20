@@ -16151,10 +16151,9 @@ function run() {
             // 3- Enter the temporary dir
             process.chdir(tempPath);
             // 4- Switch to the deployment branch
-            try {
-                yield (0,exec.exec)(`git switch ${deploymentBranch}`);
-            }
-            catch (err) {
+            if ((yield (0,exec.exec)(`git switch ${deploymentBranch}`, undefined, {
+                ignoreReturnCode: true,
+            })) !== 0) {
                 // If the switch fails, we will create a new orphan branch
                 yield (0,exec.exec)(`git switch --orphan ${deploymentBranch}`);
                 // Then we initialize stuff
