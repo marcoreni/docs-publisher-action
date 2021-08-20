@@ -33,8 +33,8 @@ export default `<!DOCTYPE html>
             <h1 class="mb-3">{{projectName}}</h1>
             <a class="btn btn-outline-light btn-lg m-2" href="{{repositoryUrl}}" role="button"
               rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
-            <a class="btn btn-outline-light btn-lg m-2" href="./{{latestVersion}}/"
-              role="button">Latest docs</a>
+            <a class="btn btn-outline-light btn-lg m-2" href="./{{docsPathPrefix}}/{{latestVersion}}/"
+              role="button">Latest version ({{latestVersion}}) docs</a>
           </div>
         </div>
       </div>
@@ -53,7 +53,7 @@ export default `<!DOCTYPE html>
           <div class="col-xs-12 text-right">
             <ul class="list-group list-group-flush">
               {{#each versions}}
-                <li class="list-group-item"><a class="text-body" href="./{{this.id}}/">{{this.id}} (released at: {{prettifyDate this.releaseTimestamp}})</a></li>
+                <li class="list-group-item"><a class="text-body" href="./{{docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
               {{/each}}
             </ul>
           </div>

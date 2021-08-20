@@ -10,7 +10,7 @@ import * as path from 'path';
 import homepageTemplate from './homepage.hbs';
 
 Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
-  return new Date(timestamp).toISOString();
+  return new Date(timestamp).toLocaleString();
 });
 
 const DOCS_FOLDER = 'docs';
@@ -74,7 +74,9 @@ async function run() {
     }
 
     const currentPath = process.cwd();
-    const docsPath = path.join(currentPath, docsRelativePath, '/');
+    let docsPath = path.join(currentPath, docsRelativePath);
+    // We need to make sure that we do not have an ending slash
+    if (docsPath.endsWith('/')) docsPath = docsPath.substr(0, docsPath.length - 1);
 
     // 2- Create a temporary dir
     const tempPath = await fs.mkdtempSync(path.join(tmpdir(), `${repository}-${deploymentBranch}`));
@@ -142,6 +144,7 @@ async function run() {
       projectName: repository,
       repositoryUrl,
       latestVersion: version,
+      docsPathPrefix: DOCS_FOLDER,
       versions: metadataFile.versions,
     };
 
