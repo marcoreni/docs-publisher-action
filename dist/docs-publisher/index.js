@@ -16064,7 +16064,7 @@ var external_path_ = __nccwpck_require__(5622);
           <div class="col-xs-12 text-right">
             <ul class="list-group list-group-flush">
               {{#each versions}}
-                <li class="list-group-item"><a class="text-body" href="./{{docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
+                <li class="list-group-item"><a class="text-body" href="./{{../docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
               {{/each}}
             </ul>
           </div>
@@ -16149,10 +16149,7 @@ function run() {
                 throw new Error(`Documentation creation failed with error: ${error.message}`);
             }
             const currentPath = process.cwd();
-            let docsPath = external_path_.join(currentPath, docsRelativePath);
-            // We need to make sure that we do not have an ending slash
-            if (docsPath.endsWith('/'))
-                docsPath = docsPath.substr(0, docsPath.length - 1);
+            const docsPath = external_path_.join(currentPath, docsRelativePath);
             // 2- Create a temporary dir
             const tempPath = yield external_fs_.mkdtempSync(external_path_.join((0,external_os_.tmpdir)(), `${repository}-${deploymentBranch}`));
             yield (0,exec.exec)(`git clone ${gitRepositoryUrl} ${tempPath}`);
@@ -16185,7 +16182,10 @@ function run() {
             external_fs_.mkdirSync(external_path_.join(DOCS_FOLDER, version));
             // 7- Copy the files to the new version
             core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-            yield (0,io.cp)(docsPath, versionedDocsPath, { recursive: true });
+            yield (0,io.cp)(docsPath, versionedDocsPath, {
+                recursive: true,
+                copySourceDirectory: false,
+            });
             // 8- Create the new version inside versions.json
             metadataFile.versions.unshift({
                 id: version,
