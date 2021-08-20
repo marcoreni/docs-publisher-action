@@ -53,7 +53,7 @@ export default `<!DOCTYPE html>
           <div class="col-xs-12 text-right">
             <ul class="list-group list-group-flush">
               {{#each versions}}
-                <li class="list-group-item"><a class="text-body" href="./{{docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
+                <li class="list-group-item"><a class="text-body" href="./{{../docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
               {{/each}}
             </ul>
           </div>

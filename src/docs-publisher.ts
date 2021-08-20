@@ -74,9 +74,7 @@ async function run() {
     }
 
     const currentPath = process.cwd();
-    let docsPath = path.join(currentPath, docsRelativePath);
-    // We need to make sure that we do not have an ending slash
-    if (docsPath.endsWith('/')) docsPath = docsPath.substr(0, docsPath.length - 1);
+    const docsPath = path.join(currentPath, docsRelativePath);
 
     // 2- Create a temporary dir
     const tempPath = await fs.mkdtempSync(path.join(tmpdir(), `${repository}-${deploymentBranch}`));
@@ -126,7 +124,10 @@ async function run() {
 
     // 7- Copy the files to the new version
     core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-    await cp(docsPath, versionedDocsPath, { recursive: true });
+    await cp(docsPath, versionedDocsPath, {
+      recursive: true,
+      copySourceDirectory: false,
+    });
 
     // 8- Create the new version inside versions.json
     metadataFile.versions.unshift({
