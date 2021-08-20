@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "after:init": ["npm run format", "npm run build"],
+  }, 
+  "git": {
+    "commitMessage": "v${version}",
+    "requireBranch": "main",
+    "requireCommits": true
+  },
+  "github": {
+    "release": false
+  },
+  "npm": false
+}

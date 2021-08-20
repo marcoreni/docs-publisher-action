@@ -1,0 +1,28 @@
+name: 'Docs publisher'
+description: 'Takes care of publishing documentation to the specified branch'
+author: 'Marco Reni'
+inputs:
+  deployment-branch:
+    description: 'The branch where the docs will be published'
+    required: true
+    default: 'gh-pages'
+  docs-command:
+    description: 'The command to be run inside the repository to create the docs'
+    required: true
+  docs-path:
+    description: 'The path where documentation will be found once docs are created. Path is relative to the root of the project'
+    required: true
+  # copy-changelog:
+  #   description: 'If set to true, will compile CHANGELOG.md in the docs homepage'
+  #   default: false
+  token:
+    description: Used to work with git. Since there's a default, this is typically not supplied by the user.
+    default: ${{ github.token }}
+  version-strategy:
+    description: The strategy to use to fetch the version. Currently, only "tag" is supported.
+    default: 'tag'
+  
+runs:
+  # https://github.com/actions/runner/issues/772
+  using: 'node12'
+  main: 'dist/docs-publisher.js'
