@@ -9,6 +9,7 @@
     - [`version-strategy`](#version-strategy)
   - [Example usage](#example-usage)
   - [Development](#development)
+    - [Release a new version](#release-a-new-version)
   - [TODO](#todo)
 
 ## Intro
@@ -73,7 +74,7 @@ steps:
 
 There is no way to test the action locally, so you should have a repository where you run your tests.  
 
-### Release a new version
+### Release a new version
 
 ```sh
 npm run release
