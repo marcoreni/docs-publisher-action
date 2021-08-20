@@ -16128,6 +16128,11 @@ function run() {
             const currentBranch = yield execOutput(`git branch --show-current`);
             const deploymentBranch = core.getInput('deployment-branch');
             const version = yield getVersion(core.getInput('version-strategy'));
+            core.info(`Inputs:
+      - command: ${command},
+      - docs-path: ${docsRelativePath},
+      - deployment-branch: ${deploymentBranch},
+    `);
             const repository = github.context.repo.repo;
             const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}`;
             const gitUsername = 'x-access-token';
@@ -16144,7 +16149,7 @@ function run() {
                 throw new Error(`Documentation creation failed with error: ${error.message}`);
             }
             const currentPath = process.cwd();
-            const docsPath = external_path_.join(currentPath, docsRelativePath);
+            const docsPath = external_path_.join(currentPath, docsRelativePath, '/');
             // 2- Create a temporary dir
             const tempPath = yield external_fs_.mkdtempSync(external_path_.join((0,external_os_.tmpdir)(), `${repository}-${deploymentBranch}`));
             yield (0,exec.exec)(`git clone ${gitRepositoryUrl} ${tempPath}`);
