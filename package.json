@@ -6,8 +6,8 @@
   "private": true,
   "scripts": {
     "build": "ncc build -o dist src/docs-publisher.ts --license licenses.txt",
-    "format": "prettier --write **/*.ts",
-    "format-check": "prettier --check **/*.ts",
+    "format": "prettier --write src/**/*.ts",
+    "format-check": "prettier --check src/**/*.ts",
     "release": "release-it --only-version"
   },
   "repository": {

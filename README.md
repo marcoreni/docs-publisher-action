@@ -64,7 +64,8 @@ steps:
 - uses: marcoreni/docs-publisher-action@v0.0.1
   with:
     deployment-branch: 'gh-pages'
-    docs-command: 'npm install && npm run docs'
+    docs-command: 'npm run docs'
+    docs-path: 'docs'
 ```
 
 ## Development
@@ -83,3 +84,4 @@ npm run release
 - Create a version cleaner/archiver (version older than XXX are deleted / archived)
 - Support `copy-changelog` parameter by putting the changelog inside the generated site
 - Enable GitHub releases (see <https://github.com/release-it/release-it/blob/master/docs/github-releases.md>)
+- Find a way to have an "automatically moving major version tag" like github default actions (ie. `@v1`)
