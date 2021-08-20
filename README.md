@@ -1,16 +1,16 @@
+<!-- omit in toc -->
 # Docs publisher action
 
-- [Docs publisher action](#docs-publisher-action)
-  - [Intro](#intro)
-  - [Inputs](#inputs)
-    - [`deployment-branch`](#deployment-branch)
-    - [`docs-command`](#docs-command)
-    - [`docs-path`](#docs-path)
-    - [`version-strategy`](#version-strategy)
-  - [Example usage](#example-usage)
-  - [Development](#development)
-    - [Release a new version](#release-a-new-version)
-  - [TODO](#todo)
+- [Intro](#intro)
+- [Inputs](#inputs)
+  - [`deployment-branch`](#deployment-branch)
+  - [`docs-command`](#docs-command)
+  - [`docs-path`](#docs-path)
+  - [`version-strategy`](#version-strategy)
+- [Example usage](#example-usage)
+- [Development](#development)
+  - [Release a new version](#release-a-new-version)
+- [TODO](#todo)
 
 ## Intro
 
