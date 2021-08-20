@@ -49,7 +49,7 @@ async function run() {
     const deploymentBranch = core.getInput('deployment-branch');
     const version = await getVersion(core.getInput('version-strategy'));
 
-    core.info(`Inputs:
+    core.debug(`Inputs:
       - command: ${command},
       - docs-path: ${docsRelativePath},
       - deployment-branch: ${deploymentBranch},
@@ -123,7 +123,7 @@ async function run() {
     fs.mkdirSync(path.join(DOCS_FOLDER, version));
 
     // 7- Copy the files to the new version
-    core.info(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
+    core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
     await cp(docsPath, versionedDocsPath, { recursive: true });
 
     // 8- Create the new version inside versions.json
@@ -156,7 +156,7 @@ async function run() {
 
     await exec('git add -A');
     const commitMessage = `Deploy docs - based on ${currentCommit}`;
-    await exec(`git commit -m ${commitMessage}`);
+    await exec(`git commit -m "${commitMessage}"`);
 
     await exec(`git push --set-upstream origin ${deploymentBranch}`);
   } catch (err) {
