@@ -16128,7 +16128,7 @@ function run() {
             const currentBranch = yield execOutput(`git branch --show-current`);
             const deploymentBranch = core.getInput('deployment-branch');
             const version = yield getVersion(core.getInput('version-strategy'));
-            core.info(`Inputs:
+            core.debug(`Inputs:
       - command: ${command},
       - docs-path: ${docsRelativePath},
       - deployment-branch: ${deploymentBranch},
@@ -16181,7 +16181,7 @@ function run() {
             const versionedDocsPath = external_path_.join(DOCS_FOLDER, version);
             external_fs_.mkdirSync(external_path_.join(DOCS_FOLDER, version));
             // 7- Copy the files to the new version
-            core.info(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
+            core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
             yield (0,io.cp)(docsPath, versionedDocsPath, { recursive: true });
             // 8- Create the new version inside versions.json
             metadataFile.versions.unshift({
@@ -16206,7 +16206,7 @@ function run() {
             yield (0,exec.exec)('git config --local user.email "gh-actions@github.com"');
             yield (0,exec.exec)('git add -A');
             const commitMessage = `Deploy docs - based on ${currentCommit}`;
-            yield (0,exec.exec)(`git commit -m ${commitMessage}`);
+            yield (0,exec.exec)(`git commit -m "${commitMessage}"`);
             yield (0,exec.exec)(`git push --set-upstream origin ${deploymentBranch}`);
         }
         catch (err) {
