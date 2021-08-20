@@ -117,6 +117,7 @@ async function run() {
     fs.mkdirSync(path.join(DOCS_FOLDER, version));
 
     // 7- Copy the files to the new version
+    core.info(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
     await cp(docsPath, versionedDocsPath, { recursive: true });
 
     // 8- Create the new version inside versions.json
