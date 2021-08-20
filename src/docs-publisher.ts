@@ -24,29 +24,8 @@ type MetadataFile = {
   }>;
 };
 
-async function shellExecLog(cmd: string) {
-  try {
-    const resultCode = await exec(cmd);
-    core.info(`CMD: ${cmd} (code: ${resultCode})`);
-    return resultCode;
-  } catch (e) {
-    core.error(`CMD: ${cmd} - error: ${e.message}`);
-    throw e;
-  }
-}
-async function shellExecLogWithOutput(cmd: string) {
-  try {
-    const result = await getExecOutput(cmd);
-    core.info(`CMD: ${cmd} (code: ${result.exitCode})`);
-    return result;
-  } catch (e) {
-    core.error(`CMD: ${cmd} - error: ${e.message}`);
-    throw e;
-  }
-}
-
 async function execOutput(cmd: string) {
-  const result = await shellExecLogWithOutput(cmd);
+  const result = await getExecOutput(cmd);
   return result.stdout.trim();
 }
 
@@ -63,7 +42,6 @@ async function getVersion(versionStrategy: string): Promise<string> {
 async function run() {
   try {
     // Inputs
-    const githubToken = core.getInput('token');
     const command = core.getInput('docs-command');
     const docsRelativePath = core.getInput('docs-path');
     const currentCommit = process.env.GITHUB_SHA;
@@ -72,7 +50,11 @@ async function run() {
     const version = await getVersion(core.getInput('version-strategy'));
 
     const repository = github.context.repo.repo;
-    const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}.git`;
+    const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}`;
+
+    const gitUsername = 'x-access-token';
+    const gitPassword = core.getInput('token');
+    const gitRepositoryUrl = `https://${gitUsername}:${gitPassword}@github.com/${github.context.repo.owner}/${repository}.git`;
 
     if (currentBranch === deploymentBranch) {
       throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
@@ -80,7 +62,7 @@ async function run() {
 
     // 1- Run the command to create the documentation
     try {
-      await shellExecLog(command);
+      await exec(command);
     } catch (error) {
       throw new Error(`Documentation creation failed with error: ${error.message}`);
     }
@@ -91,7 +73,7 @@ async function run() {
     // 2- Create a temporary dir
     const tempPath = await fs.mkdtempSync(path.join(tmpdir(), `${repository}-${deploymentBranch}`));
 
-    if ((await shellExecLog(`git clone ${repositoryUrl} ${tempPath}`)) !== 0) {
+    if ((await exec(`git clone ${gitRepositoryUrl} ${tempPath}`)) !== 0) {
       throw new Error(`Running "git clone" command in "${tempPath}" failed.`);
     }
 
@@ -99,9 +81,9 @@ async function run() {
     process.chdir(tempPath);
 
     // 4- Switch to the deployment branch
-    if ((await shellExecLog(`git switch ${deploymentBranch}`)) !== 0) {
+    if ((await exec(`git switch ${deploymentBranch}`)) !== 0) {
       // If the switch fails, we will create a new orphan branch
-      if ((await shellExecLog(`git switch --orphan ${deploymentBranch}`)) !== 0) {
+      if ((await exec(`git switch --orphan ${deploymentBranch}`)) !== 0) {
         throw new Error(`Unable to switch to the "${deploymentBranch}" branch.`);
       } else {
         // Initialize stuff
@@ -162,12 +144,14 @@ async function run() {
     fs.writeFileSync('index.html', homepage, 'utf-8');
 
     // 12- Commit && push
+    await exec('git config --local user.name "gh-actions"');
+    await exec('git config --local user.email "gh-actions@github.com"');
 
-    await shellExecLog('git add -A');
+    await exec('git add -A');
     const commitMessage = `Deploy docs - based on ${currentCommit}`;
-    await shellExecLog(`git commit -m ${commitMessage}`);
+    await exec(`git commit -m ${commitMessage}`);
 
-    await shellExecLog(`git push --set-upstream origin ${deploymentBranch}`);
+    await exec(`git push --set-upstream origin ${deploymentBranch}`);
   } catch (err) {
     core.setFailed(err.message);
   }
