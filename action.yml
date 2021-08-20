@@ -27,4 +27,4 @@ inputs:
 runs:
   # https://github.com/actions/runner/issues/772
   using: 'node12'
-  main: 'dist/docs-publisher.js'
+  main: 'dist/docs-publisher/index.js'

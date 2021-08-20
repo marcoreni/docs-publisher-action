@@ -5,7 +5,7 @@
   "main": "dist/docs-publisher.js",
   "private": true,
   "scripts": {
-    "build": "ncc build -o dist src/docs-publisher.ts --license licenses.txt",
+    "build": "rm -rf dist && ncc build -o dist/docs-publisher src/docs-publisher.ts --license licenses.txt",
     "format": "prettier --write src/**/*.ts",
     "format-check": "prettier --check src/**/*.ts",
     "release": "release-it --only-version"
