@@ -16147,26 +16147,23 @@ function run() {
             const docsPath = external_path_.join(currentPath, docsRelativePath);
             // 2- Create a temporary dir
             const tempPath = yield external_fs_.mkdtempSync(external_path_.join((0,external_os_.tmpdir)(), `${repository}-${deploymentBranch}`));
-            if ((yield (0,exec.exec)(`git clone ${gitRepositoryUrl} ${tempPath}`)) !== 0) {
-                throw new Error(`Running "git clone" command in "${tempPath}" failed.`);
-            }
+            yield (0,exec.exec)(`git clone ${gitRepositoryUrl} ${tempPath}`);
             // 3- Enter the temporary dir
             process.chdir(tempPath);
             // 4- Switch to the deployment branch
-            if ((yield (0,exec.exec)(`git switch ${deploymentBranch}`)) !== 0) {
+            try {
+                yield (0,exec.exec)(`git switch ${deploymentBranch}`);
+            }
+            catch (err) {
                 // If the switch fails, we will create a new orphan branch
-                if ((yield (0,exec.exec)(`git switch --orphan ${deploymentBranch}`)) !== 0) {
-                    throw new Error(`Unable to switch to the "${deploymentBranch}" branch.`);
-                }
-                else {
-                    // Initialize stuff
-                    external_fs_.mkdirSync(DOCS_FOLDER);
-                    const emptyMetadata = {
-                        actionVersion: 1,
-                        versions: [],
-                    };
-                    external_fs_.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
-                }
+                yield (0,exec.exec)(`git switch --orphan ${deploymentBranch}`);
+                // Then we initialize stuff
+                external_fs_.mkdirSync(DOCS_FOLDER);
+                const emptyMetadata = {
+                    actionVersion: 1,
+                    versions: [],
+                };
+                external_fs_.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
             }
             // Check if this branch is managed by this action.
             if (!external_fs_.existsSync(METADATA_FILE)) {
