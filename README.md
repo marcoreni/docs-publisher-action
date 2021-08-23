@@ -9,6 +9,7 @@
 - [Example usage](#example-usage)
 - [Development](#development)
   - [Release a new version](#release-a-new-version)
+- [Recover function](#recover-function)
 - [TODO](#todo)
 
 This action creates a documentation site with versioning on a specific branch.  
@@ -77,6 +78,18 @@ There is no way to test the action locally, so you should have a repository wher
 ```sh
 npm run release
 ```
+
+## Recover function
+
+The recover function will create the repo for already existing versioned docs.
+Checkout an empty, orphan branch of your project repo (`git switch --orphan BRANCH_NAME`), then
+create a `docs` folder and put your versioned folders in there.
+Afterwards, run the command `ts-node src/recover.ts {PROJECT_REPO_DIR} {PROJECT_REPO_URL}` where
+
+- `PROJECT_REPO_DIR` is the absolute path of the repository
+- `PROJECT_REPO_URL` is the remote URL of the repository
+
+The script will take care of generating the metadata.json file and the index.html file.
 
 ## TODO
 

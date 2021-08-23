@@ -2,27 +2,13 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { cp } from '@actions/io';
 import { exec, getExecOutput } from '@actions/exec';
-import * as Handlebars from 'handlebars';
+
 import { tmpdir } from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import homepageTemplate from './homepage.hbs';
-
-Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
-  return new Date(timestamp).toLocaleString();
-});
-
-const DOCS_FOLDER = 'docs';
-const METADATA_FILE = 'metadata.json';
-
-type MetadataFile = {
-  actionVersion: number;
-  versions: Array<{
-    id: string;
-    releaseTimestamp: number;
-  }>;
-};
+import { DOCS_FOLDER, MetadataFile, METADATA_FILE } from './constants';
+import { compileAndPersistHomepage } from './utils';
 
 async function execOutput(cmd: string) {
   const result = await getExecOutput(cmd);
@@ -140,19 +126,7 @@ async function run() {
     // 10- Write back the metadata file
     fs.writeFileSync(METADATA_FILE, JSON.stringify(metadataFile), 'utf-8');
 
-    // 11 - Compile index.html
-    const data = {
-      projectName: repository,
-      repositoryUrl,
-      latestVersion: version,
-      docsPathPrefix: DOCS_FOLDER,
-      versions: metadataFile.versions,
-    };
-
-    const homepageCompiler = Handlebars.compile(homepageTemplate, { noEscape: true });
-    const homepage = homepageCompiler(data);
-
-    fs.writeFileSync('index.html', homepage, 'utf-8');
+    compileAndPersistHomepage(repository, repositoryUrl, version, metadataFile);
 
     // 12- Commit && push
     await exec('git config --local user.name "gh-actions"');
