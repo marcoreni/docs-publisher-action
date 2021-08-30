@@ -95,4 +95,3 @@ The script will take care of generating the metadata.json file and the index.htm
 - Support other version strategies (?)
 - Create a version cleaner/archiver (version older than XXX are deleted / archived)
 - Support `copy-changelog` parameter by putting the changelog inside the generated site
-- Enable GitHub releases (see <https://github.com/release-it/release-it/blob/master/docs/github-releases.md>)
