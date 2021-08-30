@@ -8,7 +8,7 @@
     "build": "rm -rf dist && ncc build -o dist/docs-publisher src/docs-publisher.ts --license licenses.txt",
     "format": "prettier --write src/**/*.ts",
     "format-check": "prettier --check src/**/*.ts",
-    "release": "release-it --only-version",
+    "release": "dotenv release-it -- --only-version",
     "all": "npm run format && npm run build"
   },
   "repository": {
@@ -23,6 +23,7 @@
     "@actions/exec": "^1.1.0",
     "@actions/github": "^5.0.0",
     "@actions/io": "^1.1.1",
+    "dotenv-cli": "^4.0.0",
     "handlebars": "^4.7.7"
   },
   "devDependencies": {

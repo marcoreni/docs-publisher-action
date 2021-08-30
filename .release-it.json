@@ -8,9 +8,14 @@
     "requireCommits": true
   },
   "github": {
-    "release": false
+    "release": true
   },
   "npm": {
     "publish": false
+  },
+  "plugins": {
+    "./scripts/release-it/moving-git-tag-plugin.js": {
+      "key": "value"
+    }
   }
 }

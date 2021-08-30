@@ -62,7 +62,7 @@ steps:
   with:
     node-version: '14'
 - run: npm install
-- uses: marcoreni/docs-publisher-action@v0.0.1
+- uses: marcoreni/docs-publisher-action@v0
   with:
     deployment-branch: 'gh-pages'
     docs-command: 'npm run docs'
@@ -75,9 +75,8 @@ There is no way to test the action locally, so you should have a repository wher
 
 ### Release a new version
 
-```sh
-npm run release
-```
+1. Configure a `.env` file with the GITHUB_TOKEN variable. The PAT needs to have `repo` permissions on the Github Repo.
+2. Run `npm run release`
 
 ## Recover function
 
@@ -97,4 +96,3 @@ The script will take care of generating the metadata.json file and the index.htm
 - Create a version cleaner/archiver (version older than XXX are deleted / archived)
 - Support `copy-changelog` parameter by putting the changelog inside the generated site
 - Enable GitHub releases (see <https://github.com/release-it/release-it/blob/master/docs/github-releases.md>)
-- Find a way to have an "automatically moving major version tag" like github default actions (ie. `@v1`)
