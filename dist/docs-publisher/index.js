@@ -15969,6 +15969,35 @@ module.exports = require("zlib");
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__nccwpck_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__nccwpck_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/make namespace object */
 /******/ 	(() => {
 /******/ 		// define __esModule on exports
@@ -16000,14 +16029,21 @@ var github = __nccwpck_require__(5438);
 var io = __nccwpck_require__(7436);
 // EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
 var exec = __nccwpck_require__(1514);
-// EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
-var lib = __nccwpck_require__(7492);
 // EXTERNAL MODULE: external "os"
 var external_os_ = __nccwpck_require__(2087);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(5747);
+var external_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_fs_);
 // EXTERNAL MODULE: external "path"
 var external_path_ = __nccwpck_require__(5622);
+var external_path_default = /*#__PURE__*/__nccwpck_require__.n(external_path_);
+;// CONCATENATED MODULE: ./src/constants.ts
+const DOCS_FOLDER = 'docs';
+const METADATA_FILE = 'metadata.json';
+const INDEX_FILE = 'index.html';
+
+// EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
+var lib = __nccwpck_require__(7492);
 ;// CONCATENATED MODULE: ./src/homepage.hbs.ts
 /* harmony default export */ const homepage_hbs = (`<!DOCTYPE html>
 <html>
@@ -16077,6 +16113,29 @@ var external_path_ = __nccwpck_require__(5622);
   </body>
 </html>`);
 
+;// CONCATENATED MODULE: ./src/utils.ts
+
+
+
+
+
+lib.registerHelper('prettifyDate', function (timestamp) {
+    return new Date(timestamp).toLocaleString();
+});
+function compileAndPersistHomepage(repository, repositoryUrl, currentVersion, metadataFile, workingDir = process.cwd()) {
+    // 11 - Compile index.html
+    const data = {
+        projectName: repository,
+        repositoryUrl,
+        latestVersion: currentVersion,
+        docsPathPrefix: DOCS_FOLDER,
+        versions: metadataFile.versions,
+    };
+    const homepageCompiler = lib.compile(homepage_hbs, { noEscape: true });
+    const homepage = homepageCompiler(data);
+    external_fs_default().writeFileSync(external_path_default().join(workingDir, INDEX_FILE), homepage, 'utf-8');
+}
+
 ;// CONCATENATED MODULE: ./src/docs-publisher.ts
 var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -16096,11 +16155,6 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 
-lib.registerHelper('prettifyDate', function (timestamp) {
-    return new Date(timestamp).toLocaleString();
-});
-const DOCS_FOLDER = 'docs';
-const METADATA_FILE = 'metadata.json';
 function execOutput(cmd) {
     return __awaiter(this, void 0, void 0, function* () {
         const result = yield (0,exec.getExecOutput)(cmd);
@@ -16194,17 +16248,7 @@ function run() {
             // 9- TBD: cleanup old versions?
             // 10- Write back the metadata file
             external_fs_.writeFileSync(METADATA_FILE, JSON.stringify(metadataFile), 'utf-8');
-            // 11 - Compile index.html
-            const data = {
-                projectName: repository,
-                repositoryUrl,
-                latestVersion: version,
-                docsPathPrefix: DOCS_FOLDER,
-                versions: metadataFile.versions,
-            };
-            const homepageCompiler = lib.compile(homepage_hbs, { noEscape: true });
-            const homepage = homepageCompiler(data);
-            external_fs_.writeFileSync('index.html', homepage, 'utf-8');
+            compileAndPersistHomepage(repository, repositoryUrl, version, metadataFile);
             // 12- Commit && push
             yield (0,exec.exec)('git config --local user.name "gh-actions"');
             yield (0,exec.exec)('git config --local user.email "gh-actions@github.com"');
