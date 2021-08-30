@@ -34,11 +34,15 @@ async function run() {
     const currentBranch = await execOutput(`git branch --show-current`);
     const deploymentBranch = core.getInput('deployment-branch');
     const version = await getVersion(core.getInput('version-strategy'));
+    const versionSorting = await core.getInput('versions-sorting');
+    const enablePrereleases = Boolean(await core.getInput('enable-prereleases'));
 
     core.debug(`Inputs:
       - command: ${command},
       - docs-path: ${docsRelativePath},
       - deployment-branch: ${deploymentBranch},
+      - version-sorting: ${versionSorting},
+      - enable-prereleases: ${enablePrereleases},
     `);
 
     const repository = github.context.repo.repo;
@@ -126,7 +130,13 @@ async function run() {
     // 10- Write back the metadata file
     fs.writeFileSync(METADATA_FILE, JSON.stringify(metadataFile), 'utf-8');
 
-    compileAndPersistHomepage(repository, repositoryUrl, version, metadataFile);
+    compileAndPersistHomepage({
+      repository,
+      repositoryUrl,
+      metadataFile,
+      versionSorting,
+      enablePrereleases,
+    });
 
     // 12- Commit && push
     await exec('git config --local user.name "gh-actions"');

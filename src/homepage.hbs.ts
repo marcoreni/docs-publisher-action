@@ -35,6 +35,10 @@ export default `<!DOCTYPE html>
               rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
             <a class="btn btn-outline-light btn-lg m-2" href="./{{docsPathPrefix}}/{{latestVersion}}/"
               role="button">Latest version ({{latestVersion}}) docs</a>
+            {{#if latestPrereleaseVersion}}
+            <a class="btn btn-outline-light btn-lg m-2" href="./{{docsPathPrefix}}/{{latestPrereleaseVersion}}/"
+              role="button">Latest prerelease version ({{latestPrereleaseVersion}}) docs</a>
+            {{/if}}
           </div>
         </div>
       </div>
@@ -50,13 +54,30 @@ export default `<!DOCTYPE html>
       <section>
         <h4 class="mb-1 text-center text-dark"><strong>Docs</strong></h4>
         <div class="row">
-          <div class="col-xs-12 text-right">
+          <div class="{{#if prereleaseVersions}}col-md-6{{/if}} col-xs-12">
+          {{#if prereleaseVersions}}
+          <h4 class="mb-1 text-center text-dark"><strong>Releases</strong></h4>
+          {{/if}}
             <ul class="list-group list-group-flush">
               {{#each versions}}
                 <li class="list-group-item"><a class="text-body" href="./{{../docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
               {{/each}}
+              {{#if prereleaseVersions}}
+            <a class="btn btn-outline-light btn-lg m-2" href="./{{docsPathPrefix}}/{{latestPrereleaseVersion}}/"
+              role="button">Latest prerelease version ({{latestPrereleaseVersion}}) docs</a>
+            {{/if}}
             </ul>
           </div>
+          {{#if prereleaseVersions}}
+            <div class="col-md-6 col-xs-12">
+              <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
+              <ul class="list-group list-group-flush">
+                {{#each prereleaseVersions}}
+                  <li class="list-group-item"><a class="text-body" href="./{{../docsPathPrefix}}/{{this.id}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
+                {{/each}}
+              </ul>
+            </div> 
+          {{/if}}
         </div>
       </section>
       <!--Section: Content-->

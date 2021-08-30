@@ -10,6 +10,8 @@ import { compileAndPersistHomepage } from './utils';
 async function run() {
   const folder = process.argv[2];
   const repositoryUrl = process.argv[3];
+  const versionSorting = process.argv[4];
+  const enablePrereleases = Boolean(process.argv[5]);
 
   const repository = repositoryUrl.substring(repositoryUrl.lastIndexOf('/') + 1);
 
@@ -25,21 +27,36 @@ async function run() {
   }
 
   const folders = fs.readdirSync(docsFolder);
-  const data = [];
-  for (const folder of folders) {
-    const { birthtime } = fs.statSync(path.join(docsFolder, folder, 'index.html'));
-    data.push({ id: folder, releaseTimestamp: birthtime.getTime() });
+  const metadataFilePath = path.join(folder, METADATA_FILE);
+  let metadata: MetadataFile;
+
+  // Create versions.file
+  if (!fs.existsSync(metadataFilePath)) {
+    const data = [];
+    for (const folder of folders) {
+      const { birthtime } = fs.statSync(path.join(docsFolder, folder, 'index.html'));
+      data.push({ id: folder, releaseTimestamp: birthtime.getTime() });
+    }
+    data.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
+    metadata = {
+      actionVersion: 1,
+      versions: data,
+    };
+
+    fs.writeFileSync(metadataFilePath, JSON.stringify(metadata), 'utf-8');
+  } else {
+    metadata = JSON.parse(fs.readFileSync(metadataFilePath, 'utf8')) as MetadataFile;
   }
-  data.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
-  const metadata: MetadataFile = {
-    actionVersion: 1,
-    versions: data,
-  };
 
-  const currentVersion = data[0].id;
-  fs.writeFileSync(path.join(folder, METADATA_FILE), JSON.stringify(metadata), 'utf-8');
-
-  compileAndPersistHomepage(repository, repositoryUrl, currentVersion, metadata, folder);
+  // Recompile hp
+  compileAndPersistHomepage({
+    repository,
+    repositoryUrl,
+    metadataFile: metadata,
+    workingDir: folder,
+    versionSorting,
+    enablePrereleases,
+  });
 }
 
 run();

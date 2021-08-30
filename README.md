@@ -6,6 +6,8 @@
   - [`docs-command`](#docs-command)
   - [`docs-path`](#docs-path)
   - [`version-strategy`](#version-strategy)
+  - [`versions-sorting`](#versions-sorting)
+  - [`enable-prereleases`](#enable-prereleases)
 - [Example usage](#example-usage)
 - [Development](#development)
   - [Release a new version](#release-a-new-version)
@@ -53,6 +55,28 @@ The strategy to use to fetch the version. Currently, only `tag` is supported.
 
 **Defaults to**: `tag`
 
+### `versions-sorting`
+
+The strategy to use to sort the versions in the list. Possible values:
+
+- `semver-desc`: sorts by semver descending.
+- `semver-asc`: sorts by semver ascending.
+- `timestamp-desc`: sorts by release timestamp (based on the run that generated a specific build) descending.
+- `timestamp-asc`: sorts by release timestamp (based on the run that generated a specific build) ascending.
+
+**Defaults to**: `semver-desc`
+
+### `enable-prereleases`
+
+Split the versions list into two separate lists of releases and prereleases, using `semver`.
+
+**Defaults to**: `false`
+
+
+Split the versions list into releases and prereleases
+
+**Defaults to**: `tag`
+
 ## Example usage
 
 ```yaml
@@ -67,6 +91,7 @@ steps:
     deployment-branch: 'gh-pages'
     docs-command: 'npm run docs'
     docs-path: 'docs'
+    index-sorting: 'semver-desc'
 ```
 
 ## Development

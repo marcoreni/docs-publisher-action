@@ -24,6 +24,20 @@ inputs:
     description: The strategy to use to fetch the version. Currently, only "tag" is supported.
     default: 'tag'
   
+  versions-sorting:
+    required: true
+    description: "The strategy to use to sort the versions in the list. Possible values:
+      - `semver-desc`: sorts by semver descending.
+      - `semver-asc`: sorts by semver ascending.
+      - `timestamp-desc`: sorts by release timestamp (based on the run that generated a specific build) descending.
+      - `timestamp-asc`: sorts by release timestamp (based on the run that generated a specific build) ascending.
+    "
+    default: 'timestamp-desc'
+  enable-prereleases: 
+    required: true
+    description: Split the versions list into two separate lists of releases and prereleases, using `semver`.
+    default: 'false'
+
 runs:
   # https://github.com/actions/runner/issues/772
   using: 'node12'
