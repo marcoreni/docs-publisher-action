@@ -27,14 +27,24 @@ class MovingGitTagPlugin extends Plugin {
   async release() {
     await this.step({ task: () => this.publish(), label: 'Move the major version git tag', prompt: 'publish' });
   }
-  publish() {
+  async publish() {
     const { tagName } = this.config.getContext();
     const tag = tagName.split('.')[0];
 
-    this.exec(`git tag -d ${tag}`);
-    this.exec(`git push origin :refs/tags/${tag}`);
-    this.exec(`git tag ${tag}`);
-    this.exec(`git push origin ${tag}`);
+    try {
+      await this.exec(`git tag -d ${tag}`)
+      await this.exec(`git push origin :refs/tags/${tag}`);
+    } catch (err) {
+      if (/error: tag .+ not found/.test(err)) {
+        this.log.info('No old tag to delete.');
+      } else {
+        throw new Error(err);
+      }
+      // Tag may not exist
+    }
+
+    await this.exec(`git tag ${tag}`);
+    return this.exec(`git push origin ${tag}`);
   }
   afterRelease() {
   }
