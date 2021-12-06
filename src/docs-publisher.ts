@@ -44,15 +44,25 @@ async function getVersionData(versionStrategy: string): Promise<{
 async function run() {
   try {
     // Inputs
-    const command = core.getInput('docs-command');
-    const docsRelativePath = core.getInput('docs-path');
     const currentCommit = process.env.GITHUB_SHA;
     const currentBranch = await execOutput(`git branch --show-current`);
     const deploymentBranch = core.getInput('deployment-branch');
     const versionStrategy = core.getInput('version-strategy');
     const { version, packageName } = await getVersionData(versionStrategy);
+    const packageNameWithoutScope = packageName?.includes('@')
+      ? packageName?.split('@')?.[1]
+      : packageName;
     const versionSorting = core.getInput('versions-sorting');
     const enablePrereleases = Boolean(core.getInput('enable-prereleases'));
+
+    const command = core
+      .getInput('docs-command')
+      .replace('{packageName}', packageName ?? '')
+      .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
+    const docsRelativePath = core
+      .getInput('docs-path')
+      .replace('{packageName}', packageName ?? '')
+      .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
 
     core.debug(`Inputs:
       - command: ${command},
