@@ -45,11 +45,11 @@ export default `<!DOCTYPE html>
             {{#each packages}}
               {{#if this.latestPrereleaseVersion }}
                 {{#ifeq @key "default" }}
-                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
-                    role="button">Latest prerelease ({{this.latestVersion.id}}) docs</a>
+                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestPrereleaseVersion.path}}/"
+                    role="button">Latest prerelease ({{this.latestPrereleaseVersion.id}}) docs</a>
                 {{else}}
-                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
-                    role="button">Latest {{this.latestVersion.packageName}} prerelease ({{this.latestVersion.id}}) docs</a>
+                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestPrereleaseVersion.path}}/"
+                    role="button">Latest {{this.latestPrereleaseVersion.packageName}} prerelease ({{this.latestPrereleaseVersion.id}}) docs</a>
                 {{/ifeq}}
               {{/if}}
             {{/each}}

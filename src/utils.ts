@@ -74,8 +74,9 @@ export function compileAndPersistHomepage({
     };
 
     if (enablePrereleases && semver.prerelease(v.id)) {
-    } else {
       (packages[key].prereleaseVersions ??= []).push(v);
+    } else {
+      (packages[key].versions ??= []).push(v);
     }
   });
 
