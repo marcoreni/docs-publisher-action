@@ -14,28 +14,6 @@ import { lernaStrategy } from './strategies/lerna';
 
 const METADATA_VERSION_LATEST = 2;
 
-async function getVersionData(strategy: string): Promise<{
-  version?: string;
-  packages?: Record<string, string>;
-}> {
-  if (strategy === 'tag') {
-    return {
-      version: await execOutput('git describe --tags'),
-    };
-  }
-
-  if (strategy === 'lerna') {
-    const data = JSON.parse(await execOutput('lerna list --json'));
-    return Object.fromEntries(
-      data.map((d: any) => {
-        return [d.name, d.version];
-      }),
-    );
-  }
-
-  throw new Error(`Unsupported strategy ${strategy}`);
-}
-
 /**
  * NOTE: the following function is inspired by https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts
  */
@@ -89,7 +67,6 @@ async function run() {
     }
 
     const currentPath = process.cwd();
-    const docsPath = path.join(currentPath, docsRelativePath);
 
     // 2- Create a temporary dir
     const tempPath = await fs.mkdtempSync(path.join(tmpdir(), `${repository}-${deploymentBranch}`));
@@ -141,11 +118,13 @@ async function run() {
         path: path.join(DOCS_FOLDER, v.id),
       }));
     }
+    const versionedDocsPath = path.join(DOCS_FOLDER, strategyData.version);
 
     // Decide which packages must be published
     if (strategy === 'tag' && strategyData.version) {
+      const docsPath = path.join(currentPath, docsRelativePath);
+
       // 6- Create a new version based on the version variable.
-      const versionedDocsPath = path.join(DOCS_FOLDER, strategyData.version);
       fs.mkdirSync(versionedDocsPath, {
         recursive: true,
       });
@@ -165,8 +144,13 @@ async function run() {
       });
     } else if (strategy === 'lerna' && strategyData.packages) {
       for (const p of strategyData.packages) {
+        const docsPath = path.join(
+          currentPath,
+          p.location.replace(currentPath, ''),
+          docsRelativePath,
+        );
+
         // 6- Create a new version based on the version variable.
-        const versionedDocsPath = path.join(p.location, docsRelativePath);
         fs.mkdirSync(versionedDocsPath, {
           recursive: true,
         });
