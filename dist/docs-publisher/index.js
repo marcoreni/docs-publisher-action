@@ -19102,12 +19102,53 @@ const DOCS_FOLDER = 'docs';
 const METADATA_FILE = 'metadata.json';
 const INDEX_FILE = 'index.html';
 
-// EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
-var lib = __nccwpck_require__(7492);
 // EXTERNAL MODULE: ./node_modules/semver/index.js
 var semver = __nccwpck_require__(1383);
 var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
-;// CONCATENATED MODULE: ./src/homepage.hbs.ts
+// EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
+var lib = __nccwpck_require__(7492);
+;// CONCATENATED MODULE: ./src/utils.ts
+
+
+
+
+
+lib.registerHelper('prettifyDate', function (timestamp) {
+    return new Date(timestamp).toLocaleString();
+});
+lib.registerHelper('ifeq', function (a, b, options) {
+    if (a === b) {
+        return options.fn(this);
+    }
+    return options.inverse(this);
+});
+function sortVersions(versions, strategy) {
+    if (!versions || versions.length === 0)
+        return versions;
+    switch (strategy) {
+        case 'timestamp-asc':
+            return versions.sort((a, b) => a.releaseTimestamp - b.releaseTimestamp);
+        case 'timestamp-desc':
+            return versions.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
+        case 'semver-asc':
+            return versions.sort((a, b) => semver_default().compareBuild(a.id, b.id));
+        case 'semver-desc':
+        default:
+            return versions.sort((a, b) => semver_default().compareBuild(b.id, a.id));
+    }
+}
+async function utils_execOutput(cmd) {
+    const result = await (0,exec.getExecOutput)(cmd);
+    return result.stdout.trim();
+}
+function readMetadataFile() {
+    return JSON.parse(external_fs_default().readFileSync(METADATA_FILE, 'utf8'));
+}
+function writeMetadataFile(contents) {
+    external_fs_default().writeFileSync(METADATA_FILE, JSON.stringify(contents), 'utf-8');
+}
+
+;// CONCATENATED MODULE: ./src/templating/homepage.hbs.ts
 /* harmony default export */ const homepage_hbs = (`<!DOCTYPE html>
 <html>
   <head>
@@ -19209,37 +19250,13 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
   </body>
 </html>`);
 
-;// CONCATENATED MODULE: ./src/utils.ts
+;// CONCATENATED MODULE: ./src/templating/index.ts
 
 
 
 
 
 
-lib.registerHelper('prettifyDate', function (timestamp) {
-    return new Date(timestamp).toLocaleString();
-});
-lib.registerHelper('ifeq', function (a, b, options) {
-    if (a === b) {
-        return options.fn(this);
-    }
-    return options.inverse(this);
-});
-function sortVersions(versions, strategy) {
-    if (!versions || versions.length === 0)
-        return versions;
-    switch (strategy) {
-        case 'timestamp-asc':
-            return versions.sort((a, b) => a.releaseTimestamp - b.releaseTimestamp);
-        case 'timestamp-desc':
-            return versions.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
-        case 'semver-asc':
-            return versions.sort((a, b) => semver_default().compareBuild(a.id, b.id));
-        case 'semver-desc':
-        default:
-            return versions.sort((a, b) => semver_default().compareBuild(b.id, a.id));
-    }
-}
 function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, workingDir = process.cwd(), versionSorting = 'timestamp-desc', enablePrereleases = false, }) {
     const packages = {};
     metadataFile.versions.forEach((v) => {
@@ -19268,9 +19285,19 @@ function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, wo
         repositoryUrl,
         packages,
     };
-    const homepageCompiler = lib.compile(homepage_hbs, { noEscape: true });
+    const homepageCompiler = Handlebars.compile(homepage_hbs, { noEscape: true });
     const homepage = homepageCompiler(data);
     external_fs_default().writeFileSync(external_path_default().join(workingDir, INDEX_FILE), homepage, 'utf-8');
+}
+
+;// CONCATENATED MODULE: ./src/strategies/lerna.ts
+
+async function lernaStrategy() {
+    const data = JSON.parse(await utils_execOutput('lerna list --json'));
+    const metadataFile = readMetadataFile();
+    // Remove already published packages docs
+    const unpublishedDocs = data.filter((d) => !metadataFile.versions.find((v) => v.packageName === d.name && v.id.includes(d.version)));
+    return unpublishedDocs;
 }
 
 ;// CONCATENATED MODULE: ./src/docs-publisher.ts
@@ -19283,11 +19310,9 @@ function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, wo
 
 
 
+
+
 const METADATA_VERSION_LATEST = 2;
-async function execOutput(cmd) {
-    const result = await (0,exec.getExecOutput)(cmd);
-    return result.stdout.trim();
-}
 async function getVersionData(strategy) {
     if (strategy === 'tag') {
         return {
@@ -19295,13 +19320,10 @@ async function getVersionData(strategy) {
         };
     }
     if (strategy === 'lerna') {
-        const tag = await execOutput('git describe --tags');
-        const packageName = (await tag).substring(0, tag.lastIndexOf('@'));
-        const version = (await tag).replace(`${packageName}@`, '');
-        return {
-            packageName,
-            version,
-        };
+        const data = JSON.parse(await execOutput('lerna list --json'));
+        return Object.fromEntries(data.map((d) => {
+            return [d.name, d.version];
+        }));
     }
     throw new Error(`Unsupported strategy ${strategy}`);
 }
@@ -19312,21 +19334,13 @@ async function run() {
     try {
         // Inputs
         const currentCommit = process.env.GITHUB_SHA;
-        const currentBranch = await execOutput(`git branch --show-current`);
+        const currentBranch = await utils_execOutput(`git branch --show-current`);
         const deploymentBranch = core.getInput('deployment-branch');
         const strategy = core.getInput('strategy');
-        const { version, packageName } = await getVersionData(strategy);
-        const packageNameWithoutScope = packageName?.includes('@')
-            ? packageName?.split('/')?.[1]
-            : packageName;
         const versionSorting = core.getInput('versions-sorting');
         const enablePrereleases = core.getInput('enable-prereleases').toLowerCase() === 'true';
-        const command = core.getInput('docs-command')
-            .replace('{packageName}', packageName ?? '')
-            .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
-        const docsRelativePath = core.getInput('docs-path')
-            .replace('{packageName}', packageName ?? '')
-            .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
+        const command = core.getInput('docs-command');
+        const docsRelativePath = core.getInput('docs-path');
         core.debug(`Inputs:
       - command: ${command},
       - docs-path: ${docsRelativePath},
@@ -19368,13 +19382,13 @@ async function run() {
                 actionVersion: METADATA_VERSION_LATEST,
                 versions: [],
             };
-            external_fs_.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
+            writeMetadataFile(emptyMetadata);
         }
         // Check if this branch is managed by this action.
         if (!external_fs_.existsSync(METADATA_FILE)) {
             throw new Error(`The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`);
         }
-        const metadataFile = JSON.parse(external_fs_.readFileSync(METADATA_FILE, 'utf8'));
+        const metadataFile = readMetadataFile();
         if (!metadataFile.actionVersion) {
             throw new Error(`The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`);
         }
@@ -19387,27 +19401,53 @@ async function run() {
                 path: external_path_.join(DOCS_FOLDER, v.id),
             }));
         }
-        // 6- Create a new version based on the version variable.
-        const versionedDocsPath = external_path_.join(DOCS_FOLDER, packageName ?? '', version);
-        external_fs_.mkdirSync(versionedDocsPath, {
-            recursive: true,
-        });
-        // 7- Copy the files to the new version
-        core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-        await (0,io.cp)(docsPath, versionedDocsPath, {
-            recursive: true,
-            copySourceDirectory: false,
-        });
-        // 8- Create the new version inside versions.json
-        metadataFile.versions.unshift({
-            id: version,
-            releaseTimestamp: new Date().getTime(),
-            packageName,
-            path: versionedDocsPath,
-        });
+        // Decide which packages must be published
+        if (strategy === 'tag') {
+            const version = await utils_execOutput('git describe --tags');
+            // 6- Create a new version based on the version variable.
+            const versionedDocsPath = external_path_.join(DOCS_FOLDER, version);
+            external_fs_.mkdirSync(versionedDocsPath, {
+                recursive: true,
+            });
+            // 7- Copy the files to the new version
+            core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
+            await (0,io.cp)(docsPath, versionedDocsPath, {
+                recursive: true,
+                copySourceDirectory: false,
+            });
+            // 8- Create the new version inside versions.json
+            metadataFile.versions.unshift({
+                id: version,
+                releaseTimestamp: new Date().getTime(),
+                path: versionedDocsPath,
+            });
+        }
+        else if (strategy === 'lerna') {
+            const packages = await lernaStrategy();
+            for (const p of packages) {
+                // 6- Create a new version based on the version variable.
+                const versionedDocsPath = external_path_.join(p.location, docsRelativePath);
+                external_fs_.mkdirSync(versionedDocsPath, {
+                    recursive: true,
+                });
+                // 7- Copy the files to the new version
+                core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
+                await (0,io.cp)(docsPath, versionedDocsPath, {
+                    recursive: true,
+                    copySourceDirectory: false,
+                });
+                // 8- Create the new version inside versions.json
+                metadataFile.versions.unshift({
+                    id: p.version,
+                    releaseTimestamp: new Date().getTime(),
+                    path: versionedDocsPath,
+                    packageName: p.name,
+                });
+            }
+        }
         // 9- TBD: cleanup old versions?
         // 10- Write back the metadata file
-        external_fs_.writeFileSync(METADATA_FILE, JSON.stringify(metadataFile), 'utf-8');
+        writeMetadataFile(metadataFile);
         compileAndPersistHomepage({
             repository,
             repositoryUrl,
