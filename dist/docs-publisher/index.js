@@ -19323,7 +19323,7 @@ async function run() {
         const strategy = core.getInput('strategy');
         const { version, packageName } = await getVersionData(strategy);
         const packageNameWithoutScope = packageName?.includes('@')
-            ? packageName?.split('@')?.[1]
+            ? packageName?.split('/')?.[1]
             : packageName;
         const versionSorting = core.getInput('versions-sorting');
         const enablePrereleases = Boolean(core.getInput('enable-prereleases'));
