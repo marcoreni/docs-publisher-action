@@ -79,15 +79,17 @@ export default `<!DOCTYPE html>
                 {{/each}}
               </ul>
             </div>
-            {{#if prereleaseVersions && prereleaseVersions[@key]}}
-              <div class="col-md-6 col-xs-12">
-                <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
-                <ul class="list-group list-group-flush">
-                  {{#each prereleaseVersions[@key]}}
-                    <li class="list-group-item"><a class="text-body" href="./{{this.path}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
-                  {{/each}}
-                </ul>
-              </div> 
+            {{#if prereleaseVersions}}
+              {{#if prereleaseVersions[@key]}}
+                <div class="col-md-6 col-xs-12">
+                  <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
+                  <ul class="list-group list-group-flush">
+                    {{#each prereleaseVersions[@key]}}
+                      <li class="list-group-item"><a class="text-body" href="./{{this.path}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
+                    {{/each}}
+                  </ul>
+                </div> 
+              {{/if}}
             {{/if}}
           </div>
       </section>
