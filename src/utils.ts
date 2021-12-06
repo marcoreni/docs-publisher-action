@@ -1,20 +1,8 @@
 import fs from 'fs';
-import path from 'path';
-import * as Handlebars from 'handlebars';
+
 import semver from 'semver';
 import { MetadataFile, METADATA_FILE } from './constants';
 import { getExecOutput } from '@actions/exec';
-
-Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
-  return new Date(timestamp).toLocaleString();
-});
-
-Handlebars.registerHelper('ifeq', function (this: any, a, b, options) {
-  if (a === b) {
-    return options.fn(this);
-  }
-  return options.inverse(this);
-});
 
 type IndexStrategy = 'timestamp-asc' | 'timestamp-desc' | 'semver-asc' | 'semver-desc' | string;
 export function sortVersions(
