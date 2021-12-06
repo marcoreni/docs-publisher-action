@@ -18993,9 +18993,9 @@ async function run() {
                 path: path.join(constants_1.DOCS_FOLDER, v.id),
             }));
         }
-        const versionedDocsPath = path.join(constants_1.DOCS_FOLDER, strategyData.version);
         // Decide which packages must be published
         if (strategy === 'tag' && strategyData.version) {
+            const versionedDocsPath = path.join(constants_1.DOCS_FOLDER, strategyData.version);
             const docsPath = path.join(currentPath, docsRelativePath);
             // 6- Create a new version based on the version variable.
             fs.mkdirSync(versionedDocsPath, {
@@ -19016,7 +19016,9 @@ async function run() {
         }
         else if (strategy === 'lerna' && strategyData.packages) {
             for (const p of strategyData.packages) {
+                core.debug(`Working on ${p.name} - ${p.location}`);
                 const docsPath = path.join(currentPath, p.location.replace(currentPath, ''), docsRelativePath);
+                const versionedDocsPath = path.join(constants_1.DOCS_FOLDER, p.name, p.version);
                 // 6- Create a new version based on the version variable.
                 fs.mkdirSync(versionedDocsPath, {
                     recursive: true,
