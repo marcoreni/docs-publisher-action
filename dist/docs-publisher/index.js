@@ -19177,7 +19177,7 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
       <!--Section: Content-->
       <section>
         {{#each packages as |p|}}
-          <h4 class="mb-1 text-center text-dark"><strong>{{#ifeq @key "default"}}Docs{{else}}{{@key}}{{/if}}</strong></h4>
+          <h4 class="mb-1 text-center text-dark"><strong>{{#ifeq @key "default"}}Docs{{else}}{{@key}}{{/ifeq}}</strong></h4>
           <div class="row">
             <div class="{{#if p.prereleaseVersions}}col-md-6{{/if}} col-xs-12">
               {{#if p.prereleaseVersions}}
