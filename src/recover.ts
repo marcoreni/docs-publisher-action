@@ -61,7 +61,6 @@ async function run() {
     workingDir: folder,
     versionSorting,
     enablePrereleases,
-    strategy: 'tag',
   });
 }
 

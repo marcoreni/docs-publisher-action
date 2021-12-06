@@ -47,7 +47,6 @@ export function compileAndPersistHomepage({
   workingDir = process.cwd(),
   versionSorting = 'timestamp-desc',
   enablePrereleases = false,
-  strategy,
 }: {
   repository: string;
   repositoryUrl: string;
@@ -55,7 +54,6 @@ export function compileAndPersistHomepage({
   workingDir?: string;
   versionSorting?: string;
   enablePrereleases?: boolean;
-  strategy: string;
 }) {
   const packages: Record<
     string,
@@ -86,7 +84,7 @@ export function compileAndPersistHomepage({
 
     if (pkg.prereleaseVersions) {
       pkg.prereleaseVersions = sortVersions(pkg.prereleaseVersions, versionSorting);
-      pkg.latestPrereleaseVersion = sortVersions(pkg.versions, 'semver-desc')[0];
+      pkg.latestPrereleaseVersion = sortVersions(pkg.prereleaseVersions, 'semver-desc')[0];
     }
   });
 

@@ -55,7 +55,7 @@ async function run() {
       ? packageName?.split('/')?.[1]
       : packageName;
     const versionSorting = core.getInput('versions-sorting');
-    const enablePrereleases = Boolean(core.getInput('enable-prereleases'));
+    const enablePrereleases = core.getInput('enable-prereleases').toLowerCase() === 'true';
 
     const command = core
       .getInput('docs-command')
@@ -179,7 +179,6 @@ async function run() {
       metadataFile,
       versionSorting,
       enablePrereleases,
-      strategy,
     });
 
     // 12- Commit && push
