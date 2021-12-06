@@ -17,17 +17,17 @@ async function execOutput(cmd: string) {
   return result.stdout.trim();
 }
 
-async function getVersionData(versionStrategy: string): Promise<{
+async function getVersionData(strategy: string): Promise<{
   version: string;
   packageName?: string;
 }> {
-  if (versionStrategy === 'tag') {
+  if (strategy === 'tag') {
     return {
       version: await execOutput('git describe --tags'),
     };
   }
 
-  if (versionStrategy === 'monorepo-tag') {
+  if (strategy === 'lerna') {
     const tag = await execOutput('git describe --tags');
     const packageName = (await tag).substring(0, tag.lastIndexOf('@'));
     const version = (await tag).replace(packageName, '');
@@ -37,7 +37,7 @@ async function getVersionData(versionStrategy: string): Promise<{
     };
   }
 
-  throw new Error(`Unsupported versionStrategy ${versionStrategy}`);
+  throw new Error(`Unsupported strategy ${strategy}`);
 }
 
 /**
@@ -49,8 +49,8 @@ async function run() {
     const currentCommit = process.env.GITHUB_SHA;
     const currentBranch = await execOutput(`git branch --show-current`);
     const deploymentBranch = core.getInput('deployment-branch');
-    const versionStrategy = core.getInput('version-strategy');
-    const { version, packageName } = await getVersionData(versionStrategy);
+    const strategy = core.getInput('strategy');
+    const { version, packageName } = await getVersionData(strategy);
     const packageNameWithoutScope = packageName?.includes('@')
       ? packageName?.split('@')?.[1]
       : packageName;
@@ -179,7 +179,7 @@ async function run() {
       metadataFile,
       versionSorting,
       enablePrereleases,
-      versionStrategy,
+      strategy,
     });
 
     // 12- Commit && push

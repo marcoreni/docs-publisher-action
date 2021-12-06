@@ -19,9 +19,9 @@ inputs:
     required: true
     description: Used to work with git. Since there's a default, this is typically not supplied by the user.
     default: ${{ github.token }}
-  version-strategy:
+  strategy:
     required: true
-    description: The strategy to use to fetch the version. Currently, "tag" and "monorepo-tag" are supported.
+    description: The strategy to use to fetch the version. Currently, "tag" and "lerna" are supported.
     default: 'tag'
   
   versions-sorting:

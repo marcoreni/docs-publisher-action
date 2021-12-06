@@ -40,7 +40,7 @@ export function compileAndPersistHomepage({
   workingDir = process.cwd(),
   versionSorting = 'timestamp-desc',
   enablePrereleases = false,
-  versionStrategy,
+  strategy,
 }: {
   repository: string;
   repositoryUrl: string;
@@ -48,11 +48,11 @@ export function compileAndPersistHomepage({
   workingDir?: string;
   versionSorting?: string;
   enablePrereleases?: boolean;
-  versionStrategy: string;
+  strategy: string;
 }) {
   let versions: Record<string, MetadataFile['versions']> = {};
   let prereleaseVersions: Record<string, MetadataFile['versions']> | undefined;
-  if (versionStrategy === 'tag') {
+  if (strategy === 'tag') {
     if (enablePrereleases) {
       // Let's try and split the release and prerelease versions, then find latest for each, then sort them.
       versions = {
@@ -65,7 +65,7 @@ export function compileAndPersistHomepage({
       // All in one
       versions = { default: metadataFile.versions };
     }
-  } else if (versionStrategy === 'monorepo-tag') {
+  } else if (strategy === 'strategy') {
     metadataFile.versions.forEach((v) => {
       if (v.packageName) {
         (versions[v.packageName] ??= []).push(v);
