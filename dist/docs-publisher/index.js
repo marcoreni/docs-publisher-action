@@ -19294,7 +19294,16 @@ function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, wo
 
 async function lernaStrategy() {
     const data = JSON.parse(await utils_execOutput('lerna list --json'));
-    const metadataFile = readMetadataFile();
+    let metadataFile;
+    try {
+        metadataFile = readMetadataFile();
+    }
+    catch (e) {
+        return data;
+    }
+    if (typeof metadataFile === 'undefined') {
+        return data;
+    }
     // Remove already published packages docs
     const unpublishedDocs = data.filter((d) => !metadataFile.versions.find((v) => v.packageName === d.name && v.id.includes(d.version)));
     return unpublishedDocs;
@@ -19356,6 +19365,15 @@ async function run() {
         if (currentBranch === deploymentBranch) {
             throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
         }
+        const strategyData = {};
+        if (strategy === 'lerna') {
+            const packages = await lernaStrategy();
+            strategyData.packages = packages;
+        }
+        else if (strategy === 'tag') {
+            const version = await utils_execOutput('git describe --tags');
+            strategyData.version = version;
+        }
         // 1- Run the command to create the documentation
         try {
             await (0,exec.exec)(command);
@@ -19402,10 +19420,9 @@ async function run() {
             }));
         }
         // Decide which packages must be published
-        if (strategy === 'tag') {
-            const version = await utils_execOutput('git describe --tags');
+        if (strategy === 'tag' && strategyData.version) {
             // 6- Create a new version based on the version variable.
-            const versionedDocsPath = external_path_.join(DOCS_FOLDER, version);
+            const versionedDocsPath = external_path_.join(DOCS_FOLDER, strategyData.version);
             external_fs_.mkdirSync(versionedDocsPath, {
                 recursive: true,
             });
@@ -19417,14 +19434,13 @@ async function run() {
             });
             // 8- Create the new version inside versions.json
             metadataFile.versions.unshift({
-                id: version,
+                id: strategyData.version,
                 releaseTimestamp: new Date().getTime(),
                 path: versionedDocsPath,
             });
         }
-        else if (strategy === 'lerna') {
-            const packages = await lernaStrategy();
-            for (const p of packages) {
+        else if (strategy === 'lerna' && strategyData.packages) {
+            for (const p of strategyData.packages) {
                 // 6- Create a new version based on the version variable.
                 const versionedDocsPath = external_path_.join(p.location, docsRelativePath);
                 external_fs_.mkdirSync(versionedDocsPath, {
