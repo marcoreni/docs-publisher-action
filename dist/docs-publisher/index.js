@@ -19102,26 +19102,16 @@ const DOCS_FOLDER = 'docs';
 const METADATA_FILE = 'metadata.json';
 const INDEX_FILE = 'index.html';
 
+// EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
+var lib = __nccwpck_require__(7492);
 // EXTERNAL MODULE: ./node_modules/semver/index.js
 var semver = __nccwpck_require__(1383);
 var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
-// EXTERNAL MODULE: ./node_modules/handlebars/lib/index.js
-var lib = __nccwpck_require__(7492);
 ;// CONCATENATED MODULE: ./src/utils.ts
 
 
 
 
-
-lib.registerHelper('prettifyDate', function (timestamp) {
-    return new Date(timestamp).toLocaleString();
-});
-lib.registerHelper('ifeq', function (a, b, options) {
-    if (a === b) {
-        return options.fn(this);
-    }
-    return options.inverse(this);
-});
 function sortVersions(versions, strategy) {
     if (!versions || versions.length === 0)
         return versions;
@@ -19257,6 +19247,16 @@ function writeMetadataFile(contents) {
 
 
 
+
+lib.registerHelper('prettifyDate', function (timestamp) {
+    return new Date(timestamp).toLocaleString();
+});
+lib.registerHelper('ifeq', function (a, b, options) {
+    if (a === b) {
+        return options.fn(this);
+    }
+    return options.inverse(this);
+});
 function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, workingDir = process.cwd(), versionSorting = 'timestamp-desc', enablePrereleases = false, }) {
     const packages = {};
     metadataFile.versions.forEach((v) => {
@@ -19285,7 +19285,7 @@ function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, wo
         repositoryUrl,
         packages,
     };
-    const homepageCompiler = Handlebars.compile(homepage_hbs, { noEscape: true });
+    const homepageCompiler = lib.compile(homepage_hbs, { noEscape: true });
     const homepage = homepageCompiler(data);
     external_fs_default().writeFileSync(external_path_default().join(workingDir, INDEX_FILE), homepage, 'utf-8');
 }
