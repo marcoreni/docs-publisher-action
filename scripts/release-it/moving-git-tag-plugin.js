@@ -28,7 +28,10 @@ class MovingGitTagPlugin extends Plugin {
     await this.step({ task: () => this.publish(), label: 'Move the major version git tag', prompt: 'publish' });
   }
   async publish() {
-    const { tagName } = this.config.getContext();
+    const { tagName, version } = this.config.getContext();
+    // Skip prereleases
+    if (version.isPrerelease) return;
+
     const tag = tagName.split('.')[0];
 
     try {
