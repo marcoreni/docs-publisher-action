@@ -51,7 +51,7 @@ it's better to avoid messing with the branch.
 
 ### `version-strategy`
 
-The strategy to use to fetch the version. Currently, `tag` and `monorepo-tag` is supported.
+The strategy to use to fetch the version. Currently, `tag` and `monorepo-tag` are supported.
 
 **Defaults to**: `tag`
 
@@ -71,11 +71,6 @@ The strategy to use to sort the versions in the list. Possible values:
 Split the versions list into two separate lists of releases and prereleases, using `semver`.
 
 **Defaults to**: `false`
-
-
-Split the versions list into releases and prereleases
-
-**Defaults to**: `tag`
 
 ## Example usage
 

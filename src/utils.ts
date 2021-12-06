@@ -40,6 +40,7 @@ export function compileAndPersistHomepage({
   workingDir = process.cwd(),
   versionSorting = 'timestamp-desc',
   enablePrereleases = false,
+  versionStrategy,
 }: {
   repository: string;
   repositoryUrl: string;
@@ -47,35 +48,47 @@ export function compileAndPersistHomepage({
   workingDir?: string;
   versionSorting?: string;
   enablePrereleases?: boolean;
+  versionStrategy: string;
 }) {
-  let latestVersion;
-  let latestPrereleaseVersion;
-  let versions: MetadataFile['versions'];
-  let prereleaseVersions: MetadataFile['versions'] | undefined;
-  if (enablePrereleases) {
-    // Let's try and split the release and prerelease versions, then find latest for each, then sort them.
-    versions = sortVersions(
-      metadataFile.versions.filter((v) => !semver.prerelease(v.id)),
-      versionSorting,
-    );
-    prereleaseVersions = sortVersions(
-      metadataFile.versions.filter((v) => semver.prerelease(v.id)),
-      versionSorting,
-    );
-    latestVersion = sortVersions(versions, 'semver-desc')[0].id;
-    latestPrereleaseVersion = sortVersions(prereleaseVersions, 'semver-desc')[0].id;
-  } else {
-    // All in one
-    versions = sortVersions(metadataFile.versions, versionSorting);
-    latestVersion = sortVersions(metadataFile.versions, 'semver-desc')[0].id;
+  let versions: Record<string, MetadataFile['versions']> = {};
+  let prereleaseVersions: Record<string, MetadataFile['versions']> | undefined;
+  if (versionStrategy === 'tag') {
+    if (enablePrereleases) {
+      // Let's try and split the release and prerelease versions, then find latest for each, then sort them.
+      versions = {
+        default: metadataFile.versions.filter((v) => !semver.prerelease(v.id)),
+      };
+      prereleaseVersions = {
+        default: metadataFile.versions.filter((v) => semver.prerelease(v.id)),
+      };
+    } else {
+      // All in one
+      versions = { default: metadataFile.versions };
+    }
+  } else if (versionStrategy === 'monorepo-tag') {
+    metadataFile.versions.forEach((v) => {
+      if (v.packageName) {
+        (versions[v.packageName] ??= []).push(v);
+      } else {
+        (versions.default ??= []).push(v);
+      }
+    });
   }
+
+  // Sorting
+  versions = Object.fromEntries(
+    Object.entries(versions).map(([k, v]) => [k, sortVersions(v, versionSorting)]),
+  );
+  prereleaseVersions = prereleaseVersions
+    ? Object.fromEntries(
+        Object.entries(prereleaseVersions).map(([k, v]) => [k, sortVersions(v, versionSorting)]),
+      )
+    : undefined;
 
   // 11 - Compile index.html
   const data = {
     projectName: repository,
     repositoryUrl,
-    latestVersion,
-    latestPrereleaseVersion,
     versions,
     prereleaseVersions,
     docsPathPrefix: DOCS_FOLDER,

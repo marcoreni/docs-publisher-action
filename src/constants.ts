@@ -8,5 +8,6 @@ export type MetadataFile = {
     id: string;
     releaseTimestamp: number;
     packageName?: string;
+    path: string;
   }>;
 };

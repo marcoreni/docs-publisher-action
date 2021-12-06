@@ -49,7 +49,8 @@ async function run() {
     const currentCommit = process.env.GITHUB_SHA;
     const currentBranch = await execOutput(`git branch --show-current`);
     const deploymentBranch = core.getInput('deployment-branch');
-    const { version, packageName } = await getVersionData(core.getInput('version-strategy'));
+    const versionStrategy = core.getInput('version-strategy');
+    const { version, packageName } = await getVersionData(versionStrategy);
     const versionSorting = core.getInput('versions-sorting');
     const enablePrereleases = Boolean(core.getInput('enable-prereleases'));
 
@@ -142,6 +143,7 @@ async function run() {
       id: version,
       releaseTimestamp: new Date().getTime(),
       packageName,
+      path: versionedDocsPath,
     });
 
     // 9- TBD: cleanup old versions?
@@ -155,6 +157,7 @@ async function run() {
       metadataFile,
       versionSorting,
       enablePrereleases,
+      versionStrategy,
     });
 
     // 12- Commit && push
