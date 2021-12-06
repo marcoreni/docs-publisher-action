@@ -1,12 +1,19 @@
 import fs from 'fs';
 import path from 'path';
 import * as Handlebars from 'handlebars';
-import semver from 'semver';
+import semver, { sort } from 'semver';
 import { DOCS_FOLDER, INDEX_FILE, MetadataFile } from './constants';
 import homepageTemplate from './homepage.hbs';
 
 Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
   return new Date(timestamp).toLocaleString();
+});
+
+Handlebars.registerHelper('ifeq', function (this: any, a, b, options) {
+  if (a === b) {
+    return options.fn(this);
+  }
+  return options.inverse(this);
 });
 
 type IndexStrategy = 'timestamp-asc' | 'timestamp-desc' | 'semver-asc' | 'semver-desc' | string;
@@ -50,48 +57,43 @@ export function compileAndPersistHomepage({
   enablePrereleases?: boolean;
   strategy: string;
 }) {
-  let versions: Record<string, MetadataFile['versions']> = {};
-  let prereleaseVersions: Record<string, MetadataFile['versions']> | undefined;
-  if (strategy === 'tag') {
-    if (enablePrereleases) {
-      // Let's try and split the release and prerelease versions, then find latest for each, then sort them.
-      versions = {
-        default: metadataFile.versions.filter((v) => !semver.prerelease(v.id)),
-      };
-      prereleaseVersions = {
-        default: metadataFile.versions.filter((v) => semver.prerelease(v.id)),
-      };
-    } else {
-      // All in one
-      versions = { default: metadataFile.versions };
+  const packages: Record<
+    string,
+    {
+      versions: MetadataFile['versions'];
+      prereleaseVersions?: MetadataFile['versions'];
+      latestVersion?: MetadataFile['versions'][0];
+      latestPrereleaseVersion?: MetadataFile['versions'][0];
     }
-  } else if (strategy === 'strategy') {
-    metadataFile.versions.forEach((v) => {
-      if (v.packageName) {
-        (versions[v.packageName] ??= []).push(v);
-      } else {
-        (versions.default ??= []).push(v);
-      }
-    });
-  }
+  > = {};
 
-  // Sorting
-  versions = Object.fromEntries(
-    Object.entries(versions).map(([k, v]) => [k, sortVersions(v, versionSorting)]),
-  );
-  prereleaseVersions = prereleaseVersions
-    ? Object.fromEntries(
-        Object.entries(prereleaseVersions).map(([k, v]) => [k, sortVersions(v, versionSorting)]),
-      )
-    : undefined;
+  metadataFile.versions.forEach((v) => {
+    const key = v.packageName || 'default';
+    packages[key] ??= {
+      versions: [],
+    };
+
+    if (enablePrereleases && semver.prerelease(v.id)) {
+    } else {
+      (packages[key].prereleaseVersions ??= []).push(v);
+    }
+  });
+
+  Object.entries(packages).forEach(([_, pkg]) => {
+    pkg.versions = sortVersions(pkg.versions, versionSorting);
+    pkg.latestVersion = sortVersions(pkg.versions, 'semver-desc')[0];
+
+    if (pkg.prereleaseVersions) {
+      pkg.prereleaseVersions = sortVersions(pkg.prereleaseVersions, versionSorting);
+      pkg.latestPrereleaseVersion = sortVersions(pkg.versions, 'semver-desc')[0];
+    }
+  });
 
   // 11 - Compile index.html
   const data = {
     projectName: repository,
     repositoryUrl,
-    versions,
-    prereleaseVersions,
-    docsPathPrefix: DOCS_FOLDER,
+    packages,
   };
 
   const homepageCompiler = Handlebars.compile(homepageTemplate, { noEscape: true });

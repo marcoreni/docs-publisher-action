@@ -19143,22 +19143,24 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
             <h1 class="mb-3">{{projectName}}</h1>
             <a class="btn btn-outline-light btn-lg m-2" href="{{repositoryUrl}}" role="button"
               rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
-            {{#each versions}}
-              {{#if (eq @key "default") }}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest version ({{this.version}}) docs</a>
+            {{#each packages}}
+              {{#ifeq @key "default" }}
+                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                  role="button">Latest ({{this.latestVersion.id}}) docs</a>
               {{else}}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest {{this.packageName}} ({{this.version}}) docs</a>
-              {{/if}}
+                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                  role="button">Latest {{this.latestVersion.packageName}} ({{this.latestVersion.id}}) docs</a>
+              {{/ifeq}}
             {{/each}}
-            {{#each prereleaseVersions}}
-              {{#if (eq @key "default") }}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest prerelease version ({{this.version}}) docs</a>
-              {{else}}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest {{this.packageName}} prerelease ({{this.version}}) docs</a>
+            {{#each packages}}
+              {{#if this.latestPrereleaseVersion }}
+                {{#ifeq @key "default" }}
+                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                    role="button">Latest prerelease ({{this.latestVersion.id}}) docs</a>
+                {{else}}
+                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                    role="button">Latest {{this.latestVersion.packageName}} prerelease ({{this.latestVersion.id}}) docs</a>
+                {{/ifeq}}
               {{/if}}
             {{/each}}
           </div>
@@ -19174,30 +19176,28 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
     <div class="container docs">
       <!--Section: Content-->
       <section>
-        {{#each versions as |key value| }}
-          <h4 class="mb-1 text-center text-dark"><strong>{{key}}</strong></h4>
+        {{#each packages as |p|}}
+          <h4 class="mb-1 text-center text-dark"><strong>{{#ifeq @key "default"}}Docs{{else}}{{@key}}{{/if}}</strong></h4>
           <div class="row">
-            <div class="{{#if prereleaseVersions}}col-md-6{{/if}} col-xs-12">
-              {{#if prereleaseVersions}}
+            <div class="{{#if p.prereleaseVersions}}col-md-6{{/if}} col-xs-12">
+              {{#if p.prereleaseVersions}}
                 <h4 class="mb-1 text-center text-dark"><strong>Releases</strong></h4>
               {{/if}}
               <ul class="list-group list-group-flush">
-                {{#with value}}
-                  <li class="list-group-item"><a class="text-body" href="./{{path}}/">{{id}} (released on: {{prettifyDate releaseTimestamp}})</a></li>
-                {{/with}}
+                {{#each p.versions as |v| }}
+                  <li class="list-group-item"><a class="text-body" href="./{{v.path}}/">{{v.id}} (released on: {{prettifyDate v.releaseTimestamp}})</a></li>
+                {{/each}}
               </ul>
             </div>
-            {{#if prereleaseVersions}}
-		      {{#if prereleaseVersions.[key] }}
-                <div class="col-md-6 col-xs-12">
-                  <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
-                  <ul class="list-group list-group-flush">
-                    {{#with prereleaseVersions.[key]}}
-                      <li class="list-group-item"><a class="text-body" href="./{{path}}/">{{id}} (released on: {{prettifyDate releaseTimestamp}})</a></li>
-                    {{/with}}
-                  </ul>
-                </div> 
-              {{/if}}
+            {{#if p.prereleaseVersions }}
+              <div class="col-md-6 col-xs-12">
+                <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
+                <ul class="list-group list-group-flush">
+                  {{#each p.prereleaseVersions as |pv| }}
+                    <li class="list-group-item"><a class="text-body" href="./{{pv.path}}/">{{pv.id}} (released on: {{prettifyDate pv.releaseTimestamp}})</a></li>
+                  {{/each}}
+                </ul>
+              </div> 
             {{/if}}
           </div>
         {{/each}}
@@ -19219,6 +19219,12 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
 lib.registerHelper('prettifyDate', function (timestamp) {
     return new Date(timestamp).toLocaleString();
 });
+lib.registerHelper('ifeq', function (a, b, options) {
+    if (a === b) {
+        return options.fn(this);
+    }
+    return options.inverse(this);
+});
 function sortVersions(versions, strategy) {
     if (!versions || versions.length === 0)
         return versions;
@@ -19235,45 +19241,31 @@ function sortVersions(versions, strategy) {
     }
 }
 function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, workingDir = process.cwd(), versionSorting = 'timestamp-desc', enablePrereleases = false, strategy, }) {
-    let versions = {};
-    let prereleaseVersions;
-    if (strategy === 'tag') {
-        if (enablePrereleases) {
-            // Let's try and split the release and prerelease versions, then find latest for each, then sort them.
-            versions = {
-                default: metadataFile.versions.filter((v) => !semver_default().prerelease(v.id)),
-            };
-            prereleaseVersions = {
-                default: metadataFile.versions.filter((v) => semver_default().prerelease(v.id)),
-            };
+    const packages = {};
+    metadataFile.versions.forEach((v) => {
+        const key = v.packageName || 'default';
+        packages[key] ??= {
+            versions: [],
+        };
+        if (enablePrereleases && semver_default().prerelease(v.id)) {
         }
         else {
-            // All in one
-            versions = { default: metadataFile.versions };
+            (packages[key].prereleaseVersions ??= []).push(v);
         }
-    }
-    else if (strategy === 'strategy') {
-        metadataFile.versions.forEach((v) => {
-            if (v.packageName) {
-                (versions[v.packageName] ??= []).push(v);
-            }
-            else {
-                (versions.default ??= []).push(v);
-            }
-        });
-    }
-    // Sorting
-    versions = Object.fromEntries(Object.entries(versions).map(([k, v]) => [k, sortVersions(v, versionSorting)]));
-    prereleaseVersions = prereleaseVersions
-        ? Object.fromEntries(Object.entries(prereleaseVersions).map(([k, v]) => [k, sortVersions(v, versionSorting)]))
-        : undefined;
+    });
+    Object.entries(packages).forEach(([_, pkg]) => {
+        pkg.versions = sortVersions(pkg.versions, versionSorting);
+        pkg.latestVersion = sortVersions(pkg.versions, 'semver-desc')[0];
+        if (pkg.prereleaseVersions) {
+            pkg.prereleaseVersions = sortVersions(pkg.prereleaseVersions, versionSorting);
+            pkg.latestPrereleaseVersion = sortVersions(pkg.versions, 'semver-desc')[0];
+        }
+    });
     // 11 - Compile index.html
     const data = {
         projectName: repository,
         repositoryUrl,
-        versions,
-        prereleaseVersions,
-        docsPathPrefix: DOCS_FOLDER,
+        packages,
     };
     const homepageCompiler = lib.compile(homepage_hbs, { noEscape: true });
     const homepage = homepageCompiler(data);
@@ -19304,7 +19296,7 @@ async function getVersionData(strategy) {
     if (strategy === 'lerna') {
         const tag = await execOutput('git describe --tags');
         const packageName = (await tag).substring(0, tag.lastIndexOf('@'));
-        const version = (await tag).replace(packageName, '');
+        const version = (await tag).replace(`${packageName}@`, '');
         return {
             packageName,
             version,
@@ -19395,7 +19387,7 @@ async function run() {
             }));
         }
         // 6- Create a new version based on the version variable.
-        const versionedDocsPath = external_path_.join(DOCS_FOLDER, version, packageName ?? '');
+        const versionedDocsPath = external_path_.join(DOCS_FOLDER, packageName ?? '', version);
         external_fs_.mkdirSync(versionedDocsPath, {
             recursive: true,
         });
