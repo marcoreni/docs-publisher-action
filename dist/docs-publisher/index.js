@@ -19144,7 +19144,7 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
             <a class="btn btn-outline-light btn-lg m-2" href="{{repositoryUrl}}" role="button"
               rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
             {{#each versions}}
-              {{#if @key == 'default' }}
+              {{#if (eq @key "default") }}
                 <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
                   role="button">Latest version ({{this.version}}) docs</a>
               {{#else}}
@@ -19154,7 +19154,7 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
             {{/each}}
             {{#if prereleaseVersions}}
               {{#each prereleaseVersions}}
-                {{#if @key == 'default' }}
+                {{#if (eq @key "default") }}
                   <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
                     role="button">Latest prerelease version ({{this.version}}) docs</a>
                 {{#else}}
