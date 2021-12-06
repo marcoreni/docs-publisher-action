@@ -19240,7 +19240,7 @@ function sortVersions(versions, strategy) {
             return versions.sort((a, b) => semver_default().compareBuild(b.id, a.id));
     }
 }
-function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, workingDir = process.cwd(), versionSorting = 'timestamp-desc', enablePrereleases = false, strategy, }) {
+function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, workingDir = process.cwd(), versionSorting = 'timestamp-desc', enablePrereleases = false, }) {
     const packages = {};
     metadataFile.versions.forEach((v) => {
         const key = v.packageName || 'default';
@@ -19259,7 +19259,7 @@ function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, wo
         pkg.latestVersion = sortVersions(pkg.versions, 'semver-desc')[0];
         if (pkg.prereleaseVersions) {
             pkg.prereleaseVersions = sortVersions(pkg.prereleaseVersions, versionSorting);
-            pkg.latestPrereleaseVersion = sortVersions(pkg.versions, 'semver-desc')[0];
+            pkg.latestPrereleaseVersion = sortVersions(pkg.prereleaseVersions, 'semver-desc')[0];
         }
     });
     // 11 - Compile index.html
@@ -19320,7 +19320,7 @@ async function run() {
             ? packageName?.split('/')?.[1]
             : packageName;
         const versionSorting = core.getInput('versions-sorting');
-        const enablePrereleases = Boolean(core.getInput('enable-prereleases'));
+        const enablePrereleases = core.getInput('enable-prereleases').toLowerCase() === 'true';
         const command = core.getInput('docs-command')
             .replace('{packageName}', packageName ?? '')
             .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
@@ -19414,7 +19414,6 @@ async function run() {
             metadataFile,
             versionSorting,
             enablePrereleases,
-            strategy,
         });
         // 12- Commit && push
         await (0,exec.exec)('git config --local user.name "gh-actions"');
