@@ -37,7 +37,7 @@ export default `<!DOCTYPE html>
               {{#if (eq @key "default") }}
                 <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
                   role="button">Latest version ({{this.version}}) docs</a>
-              {{#else}}
+              {{else}}
                 <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
                   role="button">Latest {{this.packageName}} ({{this.version}}) docs</a>
               {{/if}}
@@ -47,7 +47,7 @@ export default `<!DOCTYPE html>
                 {{#if (eq @key "default") }}
                   <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
                     role="button">Latest prerelease version ({{this.version}}) docs</a>
-                {{#else}}
+                {{else}}
                   <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
                     role="button">Latest {{this.packageName}} prerelease ({{this.version}}) docs</a>
                 {{/if}}
