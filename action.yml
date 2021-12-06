@@ -39,6 +39,5 @@ inputs:
     default: 'false'
 
 runs:
-  # https://github.com/actions/runner/issues/772
-  using: 'node12'
+  using: 'node16'
   main: 'dist/docs-publisher/index.js'
