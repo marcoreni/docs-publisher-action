@@ -19152,17 +19152,15 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
                   role="button">Latest {{this.packageName}} ({{this.version}}) docs</a>
               {{/if}}
             {{/each}}
-            {{#if prereleaseVersions}}
-              {{#each prereleaseVersions}}
-                {{#if (eq @key "default") }}
-                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                    role="button">Latest prerelease version ({{this.version}}) docs</a>
-                {{else}}
-                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                    role="button">Latest {{this.packageName}} prerelease ({{this.version}}) docs</a>
-                {{/if}}
-              {{/each}}
-            {{/if}}
+            {{#each prereleaseVersions}}
+              {{#if (eq @key "default") }}
+                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
+                  role="button">Latest prerelease version ({{this.version}}) docs</a>
+              {{else}}
+                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
+                  role="button">Latest {{this.packageName}} prerelease ({{this.version}}) docs</a>
+              {{/if}}
+            {{/each}}
           </div>
         </div>
       </div>
@@ -19176,32 +19174,33 @@ var semver_default = /*#__PURE__*/__nccwpck_require__.n(semver);
     <div class="container docs">
       <!--Section: Content-->
       <section>
-        {{#each versions}}
-          <h4 class="mb-1 text-center text-dark"><strong>{{@key}}</strong></h4>
+        {{#each versions as |key value| }}
+          <h4 class="mb-1 text-center text-dark"><strong>{{key}}</strong></h4>
           <div class="row">
             <div class="{{#if prereleaseVersions}}col-md-6{{/if}} col-xs-12">
               {{#if prereleaseVersions}}
                 <h4 class="mb-1 text-center text-dark"><strong>Releases</strong></h4>
               {{/if}}
               <ul class="list-group list-group-flush">
-                {{#each this}}
-                  <li class="list-group-item"><a class="text-body" href="./{{this.path}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
-                {{/each}}
+                {{#with value}}
+                  <li class="list-group-item"><a class="text-body" href="./{{path}}/">{{id}} (released on: {{prettifyDate releaseTimestamp}})</a></li>
+                {{/with}}
               </ul>
             </div>
             {{#if prereleaseVersions}}
-              {{#if prereleaseVersions[@key]}}
+		      {{#if prereleaseVersions.[key] }}
                 <div class="col-md-6 col-xs-12">
                   <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
                   <ul class="list-group list-group-flush">
-                    {{#each prereleaseVersions[@key]}}
-                      <li class="list-group-item"><a class="text-body" href="./{{this.path}}/">{{this.id}} (released on: {{prettifyDate this.releaseTimestamp}})</a></li>
-                    {{/each}}
+                    {{#with prereleaseVersions.[key]}}
+                      <li class="list-group-item"><a class="text-body" href="./{{path}}/">{{id}} (released on: {{prettifyDate releaseTimestamp}})</a></li>
+                    {{/with}}
                   </ul>
                 </div> 
               {{/if}}
             {{/if}}
           </div>
+        {{/each}}
       </section>
       <!--Section: Content-->
     </div>

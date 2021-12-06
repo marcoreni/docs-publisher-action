@@ -33,22 +33,24 @@ export default `<!DOCTYPE html>
             <h1 class="mb-3">{{projectName}}</h1>
             <a class="btn btn-outline-light btn-lg m-2" href="{{repositoryUrl}}" role="button"
               rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
-            {{#each versions}}
-              {{#if (eq @key "default") }}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest version ({{this.version}}) docs</a>
+            {{#each packages}}
+              {{#ifeq @key "default" }}
+                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                  role="button">Latest ({{this.latestVersion.id}}) docs</a>
               {{else}}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest {{this.packageName}} ({{this.version}}) docs</a>
-              {{/if}}
+                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                  role="button">Latest {{this.latestVersion.packageName}} ({{this.latestVersion.id}}) docs</a>
+              {{/ifeq}}
             {{/each}}
-            {{#each prereleaseVersions}}
-              {{#if (eq @key "default") }}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest prerelease version ({{this.version}}) docs</a>
-              {{else}}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.path}}/"
-                  role="button">Latest {{this.packageName}} prerelease ({{this.version}}) docs</a>
+            {{#each packages}}
+              {{#if this.latestPrereleaseVersion }}
+                {{#ifeq @key "default" }}
+                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                    role="button">Latest prerelease ({{this.latestVersion.id}}) docs</a>
+                {{else}}
+                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                    role="button">Latest {{this.latestVersion.packageName}} prerelease ({{this.latestVersion.id}}) docs</a>
+                {{/ifeq}}
               {{/if}}
             {{/each}}
           </div>
@@ -64,30 +66,28 @@ export default `<!DOCTYPE html>
     <div class="container docs">
       <!--Section: Content-->
       <section>
-        {{#each versions as |key value| }}
-          <h4 class="mb-1 text-center text-dark"><strong>{{key}}</strong></h4>
+        {{#each packages as |p|}}
+          <h4 class="mb-1 text-center text-dark"><strong>{{#ifeq @key "default"}}Docs{{else}}{{@key}}{{/if}}</strong></h4>
           <div class="row">
-            <div class="{{#if prereleaseVersions}}col-md-6{{/if}} col-xs-12">
-              {{#if prereleaseVersions}}
+            <div class="{{#if p.prereleaseVersions}}col-md-6{{/if}} col-xs-12">
+              {{#if p.prereleaseVersions}}
                 <h4 class="mb-1 text-center text-dark"><strong>Releases</strong></h4>
               {{/if}}
               <ul class="list-group list-group-flush">
-                {{#with value}}
-                  <li class="list-group-item"><a class="text-body" href="./{{path}}/">{{id}} (released on: {{prettifyDate releaseTimestamp}})</a></li>
-                {{/with}}
+                {{#each p.versions as |v| }}
+                  <li class="list-group-item"><a class="text-body" href="./{{v.path}}/">{{v.id}} (released on: {{prettifyDate v.releaseTimestamp}})</a></li>
+                {{/each}}
               </ul>
             </div>
-            {{#if prereleaseVersions}}
-		      {{#if prereleaseVersions.[key] }}
-                <div class="col-md-6 col-xs-12">
-                  <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
-                  <ul class="list-group list-group-flush">
-                    {{#with prereleaseVersions.[key]}}
-                      <li class="list-group-item"><a class="text-body" href="./{{path}}/">{{id}} (released on: {{prettifyDate releaseTimestamp}})</a></li>
-                    {{/with}}
-                  </ul>
-                </div> 
-              {{/if}}
+            {{#if p.prereleaseVersions }}
+              <div class="col-md-6 col-xs-12">
+                <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
+                <ul class="list-group list-group-flush">
+                  {{#each p.prereleaseVersions as |pv| }}
+                    <li class="list-group-item"><a class="text-body" href="./{{pv.path}}/">{{pv.id}} (released on: {{prettifyDate pv.releaseTimestamp}})</a></li>
+                  {{/each}}
+                </ul>
+              </div> 
             {{/if}}
           </div>
         {{/each}}

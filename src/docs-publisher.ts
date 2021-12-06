@@ -30,7 +30,7 @@ async function getVersionData(strategy: string): Promise<{
   if (strategy === 'lerna') {
     const tag = await execOutput('git describe --tags');
     const packageName = (await tag).substring(0, tag.lastIndexOf('@'));
-    const version = (await tag).replace(packageName, '');
+    const version = (await tag).replace(`${packageName}@`, '');
     return {
       packageName,
       version,
@@ -148,7 +148,7 @@ async function run() {
     }
 
     // 6- Create a new version based on the version variable.
-    const versionedDocsPath = path.join(DOCS_FOLDER, version, packageName ?? '');
+    const versionedDocsPath = path.join(DOCS_FOLDER, packageName ?? '', version);
     fs.mkdirSync(versionedDocsPath, {
       recursive: true,
     });
