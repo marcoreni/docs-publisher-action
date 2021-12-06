@@ -59,7 +59,7 @@ it's better to avoid messing with the branch.
 
 ### `strategy`
 
-The strategy to use to fetch the version. Currently, `tag` and `lerna` are supported.
+The strategy to use to fetch the release details. Currently, `tag` and `lerna` are supported.
 
 **Defaults to**: `tag`
 
@@ -94,7 +94,7 @@ steps:
     deployment-branch: 'gh-pages'
     docs-command: 'npm run docs'
     docs-path: 'docs'
-    index-sorting: 'semver-desc'
+    versions-sorting: 'semver-desc'
 ```
 
 ## Development
