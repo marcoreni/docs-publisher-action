@@ -5,7 +5,8 @@
 import fs from 'fs';
 import path from 'path';
 import { DOCS_FOLDER, MetadataFile, METADATA_FILE } from './constants';
-import { compileAndPersistHomepage } from './utils';
+import { compileAndPersistHomepage } from './templating';
+import { readMetadataFile, writeMetadataFile } from './utils';
 
 async function run() {
   const folder = process.argv[2];
@@ -48,9 +49,9 @@ async function run() {
       versions: data,
     };
 
-    fs.writeFileSync(metadataFilePath, JSON.stringify(metadata), 'utf-8');
+    writeMetadataFile(metadata);
   } else {
-    metadata = JSON.parse(fs.readFileSync(metadataFilePath, 'utf8')) as MetadataFile;
+    metadata = readMetadataFile();
   }
 
   // Recompile hp

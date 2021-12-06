@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import * as Handlebars from 'handlebars';
-import semver, { sort } from 'semver';
-import { DOCS_FOLDER, INDEX_FILE, MetadataFile } from './constants';
-import homepageTemplate from './homepage.hbs';
+import semver from 'semver';
+import { MetadataFile, METADATA_FILE } from './constants';
+import { getExecOutput } from '@actions/exec';
 
 Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
   return new Date(timestamp).toLocaleString();
@@ -17,12 +17,12 @@ Handlebars.registerHelper('ifeq', function (this: any, a, b, options) {
 });
 
 type IndexStrategy = 'timestamp-asc' | 'timestamp-desc' | 'semver-asc' | 'semver-desc' | string;
-function sortVersions(
+export function sortVersions(
   versions: MetadataFile['versions'],
   strategy: IndexStrategy,
 ): MetadataFile['versions'];
-function sortVersions(versions: undefined, strategy: IndexStrategy): undefined;
-function sortVersions(
+export function sortVersions(versions: undefined, strategy: IndexStrategy): undefined;
+export function sortVersions(
   versions: MetadataFile['versions'] | undefined,
   strategy: IndexStrategy,
 ): MetadataFile['versions'] | undefined {
@@ -40,63 +40,15 @@ function sortVersions(
   }
 }
 
-export function compileAndPersistHomepage({
-  repository,
-  repositoryUrl,
-  metadataFile,
-  workingDir = process.cwd(),
-  versionSorting = 'timestamp-desc',
-  enablePrereleases = false,
-}: {
-  repository: string;
-  repositoryUrl: string;
-  metadataFile: MetadataFile;
-  workingDir?: string;
-  versionSorting?: string;
-  enablePrereleases?: boolean;
-}) {
-  const packages: Record<
-    string,
-    {
-      versions: MetadataFile['versions'];
-      prereleaseVersions?: MetadataFile['versions'];
-      latestVersion?: MetadataFile['versions'][0];
-      latestPrereleaseVersion?: MetadataFile['versions'][0];
-    }
-  > = {};
+export async function execOutput(cmd: string) {
+  const result = await getExecOutput(cmd);
+  return result.stdout.trim();
+}
 
-  metadataFile.versions.forEach((v) => {
-    const key = v.packageName || 'default';
-    packages[key] ??= {
-      versions: [],
-    };
+export function readMetadataFile(): MetadataFile {
+  return JSON.parse(fs.readFileSync(METADATA_FILE, 'utf8')) as MetadataFile;
+}
 
-    if (enablePrereleases && semver.prerelease(v.id)) {
-      (packages[key].prereleaseVersions ??= []).push(v);
-    } else {
-      (packages[key].versions ??= []).push(v);
-    }
-  });
-
-  Object.entries(packages).forEach(([_, pkg]) => {
-    pkg.versions = sortVersions(pkg.versions, versionSorting);
-    pkg.latestVersion = sortVersions(pkg.versions, 'semver-desc')[0];
-
-    if (pkg.prereleaseVersions) {
-      pkg.prereleaseVersions = sortVersions(pkg.prereleaseVersions, versionSorting);
-      pkg.latestPrereleaseVersion = sortVersions(pkg.prereleaseVersions, 'semver-desc')[0];
-    }
-  });
-
-  // 11 - Compile index.html
-  const data = {
-    projectName: repository,
-    repositoryUrl,
-    packages,
-  };
-
-  const homepageCompiler = Handlebars.compile(homepageTemplate, { noEscape: true });
-  const homepage = homepageCompiler(data);
-
-  fs.writeFileSync(path.join(workingDir, INDEX_FILE), homepage, 'utf-8');
+export function writeMetadataFile(contents: MetadataFile) {
+  fs.writeFileSync(METADATA_FILE, JSON.stringify(contents), 'utf-8');
 }

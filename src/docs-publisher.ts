@@ -1,25 +1,22 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { cp } from '@actions/io';
-import { exec, getExecOutput } from '@actions/exec';
+import { exec } from '@actions/exec';
 
 import { tmpdir } from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 
 import { DOCS_FOLDER, MetadataFile, METADATA_FILE } from './constants';
-import { compileAndPersistHomepage } from './utils';
+import { compileAndPersistHomepage } from './templating';
+import { execOutput, readMetadataFile, writeMetadataFile } from './utils';
+import { lernaStrategy } from './strategies/lerna';
 
 const METADATA_VERSION_LATEST = 2;
 
-async function execOutput(cmd: string) {
-  const result = await getExecOutput(cmd);
-  return result.stdout.trim();
-}
-
 async function getVersionData(strategy: string): Promise<{
-  version: string;
-  packageName?: string;
+  version?: string;
+  packages?: Record<string, string>;
 }> {
   if (strategy === 'tag') {
     return {
@@ -28,13 +25,12 @@ async function getVersionData(strategy: string): Promise<{
   }
 
   if (strategy === 'lerna') {
-    const tag = await execOutput('git describe --tags');
-    const packageName = (await tag).substring(0, tag.lastIndexOf('@'));
-    const version = (await tag).replace(`${packageName}@`, '');
-    return {
-      packageName,
-      version,
-    };
+    const data = JSON.parse(await execOutput('lerna list --json'));
+    return Object.fromEntries(
+      data.map((d: any) => {
+        return [d.name, d.version];
+      }),
+    );
   }
 
   throw new Error(`Unsupported strategy ${strategy}`);
@@ -50,21 +46,11 @@ async function run() {
     const currentBranch = await execOutput(`git branch --show-current`);
     const deploymentBranch = core.getInput('deployment-branch');
     const strategy = core.getInput('strategy');
-    const { version, packageName } = await getVersionData(strategy);
-    const packageNameWithoutScope = packageName?.includes('@')
-      ? packageName?.split('/')?.[1]
-      : packageName;
     const versionSorting = core.getInput('versions-sorting');
     const enablePrereleases = core.getInput('enable-prereleases').toLowerCase() === 'true';
 
-    const command = core
-      .getInput('docs-command')
-      .replace('{packageName}', packageName ?? '')
-      .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
-    const docsRelativePath = core
-      .getInput('docs-path')
-      .replace('{packageName}', packageName ?? '')
-      .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
+    const command = core.getInput('docs-command');
+    const docsRelativePath = core.getInput('docs-path');
 
     core.debug(`Inputs:
       - command: ${command},
@@ -119,8 +105,7 @@ async function run() {
         actionVersion: METADATA_VERSION_LATEST,
         versions: [],
       };
-
-      fs.writeFileSync(METADATA_FILE, JSON.stringify(emptyMetadata));
+      writeMetadataFile(emptyMetadata);
     }
 
     // Check if this branch is managed by this action.
@@ -130,7 +115,7 @@ async function run() {
       );
     }
 
-    const metadataFile = JSON.parse(fs.readFileSync(METADATA_FILE, 'utf8')) as MetadataFile;
+    const metadataFile = readMetadataFile();
     if (!metadataFile.actionVersion) {
       throw new Error(
         `The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`,
@@ -147,31 +132,59 @@ async function run() {
       }));
     }
 
-    // 6- Create a new version based on the version variable.
-    const versionedDocsPath = path.join(DOCS_FOLDER, packageName ?? '', version);
-    fs.mkdirSync(versionedDocsPath, {
-      recursive: true,
-    });
+    // Decide which packages must be published
+    if (strategy === 'tag') {
+      const version = await execOutput('git describe --tags');
+      // 6- Create a new version based on the version variable.
+      const versionedDocsPath = path.join(DOCS_FOLDER, version);
+      fs.mkdirSync(versionedDocsPath, {
+        recursive: true,
+      });
 
-    // 7- Copy the files to the new version
-    core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-    await cp(docsPath, versionedDocsPath, {
-      recursive: true,
-      copySourceDirectory: false,
-    });
+      // 7- Copy the files to the new version
+      core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
+      await cp(docsPath, versionedDocsPath, {
+        recursive: true,
+        copySourceDirectory: false,
+      });
 
-    // 8- Create the new version inside versions.json
-    metadataFile.versions.unshift({
-      id: version,
-      releaseTimestamp: new Date().getTime(),
-      packageName,
-      path: versionedDocsPath,
-    });
+      // 8- Create the new version inside versions.json
+      metadataFile.versions.unshift({
+        id: version,
+        releaseTimestamp: new Date().getTime(),
+        path: versionedDocsPath,
+      });
+    } else if (strategy === 'lerna') {
+      const packages = await lernaStrategy();
+
+      for (const p of packages) {
+        // 6- Create a new version based on the version variable.
+        const versionedDocsPath = path.join(p.location, docsRelativePath);
+        fs.mkdirSync(versionedDocsPath, {
+          recursive: true,
+        });
+
+        // 7- Copy the files to the new version
+        core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
+        await cp(docsPath, versionedDocsPath, {
+          recursive: true,
+          copySourceDirectory: false,
+        });
+
+        // 8- Create the new version inside versions.json
+        metadataFile.versions.unshift({
+          id: p.version,
+          releaseTimestamp: new Date().getTime(),
+          path: versionedDocsPath,
+          packageName: p.name,
+        });
+      }
+    }
 
     // 9- TBD: cleanup old versions?
 
     // 10- Write back the metadata file
-    fs.writeFileSync(METADATA_FILE, JSON.stringify(metadataFile), 'utf-8');
+    writeMetadataFile(metadataFile);
 
     compileAndPersistHomepage({
       repository,
