@@ -44,16 +44,14 @@ it's better to avoid messing with the branch.
 
 ### `docs-command`
 
-**Required** The command to be run inside the repository to create the docs. When used with `lerna` strategy, you need to set only
-the subpath for the docs folder inside each of the packages. The action will take care of the rest.
+**Required** The command to be run inside the repository to create the docs. If using `lerna` strategy, you need to run
+a command that will create documentation for all the packages. The action will take care of publishing only what's necessary.
 
 ### `docs-path`
 
-**Required** The path where documentation will be found once docs are created. Path is relative to the root of the project
-
-- `{packageName}`: will work if you are using `lerna` strategy, it will be the package name without the version.
-- `{packageNameWithoutScope}`: will work if you are using `lerna` strategy, it will be the package name without the version and the scope
-  If the package has no scope, it will be the same as the package name.
+**Required** The path where documentation will be found once docs are created. Path is relative to the root of the project.
+When used with `lerna` strategy, you need to set only the subpath for the docs folder inside each of the packages.
+The action will take care of the rest.
 
 ### `strategy`
 
@@ -65,7 +63,7 @@ The strategy to use to fetch the release details. Currently, `tag` and `lerna` a
 
 When enabling this strategy, the script will generate documentation for every package available,
 then it will look every package for an unpublished version and publish everything that is not already
-published. This allows to run this action with `concurrency` + `cancel-in-progress`.
+published. This allows to run this action with `concurrency` + `cancel-in-progress` without issues.
 
 ### `versions-sorting`
 

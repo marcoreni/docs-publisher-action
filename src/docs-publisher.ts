@@ -71,6 +71,16 @@ async function run() {
       throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
     }
 
+    const strategyData = {} as Record<string, any>;
+
+    if (strategy === 'lerna') {
+      const packages = await lernaStrategy();
+      strategyData.packages = packages;
+    } else if (strategy === 'tag') {
+      const version = await execOutput('git describe --tags');
+      strategyData.version = version;
+    }
+
     // 1- Run the command to create the documentation
     try {
       await exec(command);
@@ -133,10 +143,9 @@ async function run() {
     }
 
     // Decide which packages must be published
-    if (strategy === 'tag') {
-      const version = await execOutput('git describe --tags');
+    if (strategy === 'tag' && strategyData.version) {
       // 6- Create a new version based on the version variable.
-      const versionedDocsPath = path.join(DOCS_FOLDER, version);
+      const versionedDocsPath = path.join(DOCS_FOLDER, strategyData.version);
       fs.mkdirSync(versionedDocsPath, {
         recursive: true,
       });
@@ -150,14 +159,12 @@ async function run() {
 
       // 8- Create the new version inside versions.json
       metadataFile.versions.unshift({
-        id: version,
+        id: strategyData.version,
         releaseTimestamp: new Date().getTime(),
         path: versionedDocsPath,
       });
-    } else if (strategy === 'lerna') {
-      const packages = await lernaStrategy();
-
-      for (const p of packages) {
+    } else if (strategy === 'lerna' && strategyData.packages) {
+      for (const p of strategyData.packages) {
         // 6- Create a new version based on the version variable.
         const versionedDocsPath = path.join(p.location, docsRelativePath);
         fs.mkdirSync(versionedDocsPath, {
