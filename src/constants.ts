@@ -7,5 +7,7 @@ export type MetadataFile = {
   versions: Array<{
     id: string;
     releaseTimestamp: number;
+    packageName?: string;
+    path: string;
   }>;
 };

@@ -19,9 +19,9 @@ inputs:
     required: true
     description: Used to work with git. Since there's a default, this is typically not supplied by the user.
     default: ${{ github.token }}
-  version-strategy:
+  strategy:
     required: true
-    description: The strategy to use to fetch the version. Currently, only "tag" is supported.
+    description: The strategy to use to fetch the version. Currently, "tag" and "lerna" are supported.
     default: 'tag'
   
   versions-sorting:
@@ -39,6 +39,5 @@ inputs:
     default: 'false'
 
 runs:
-  # https://github.com/actions/runner/issues/772
-  using: 'node12'
+  using: 'node16'
   main: 'dist/docs-publisher/index.js'

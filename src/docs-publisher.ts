@@ -10,16 +10,34 @@ import * as path from 'path';
 import { DOCS_FOLDER, MetadataFile, METADATA_FILE } from './constants';
 import { compileAndPersistHomepage } from './utils';
 
+const METADATA_VERSION_LATEST = 2;
+
 async function execOutput(cmd: string) {
   const result = await getExecOutput(cmd);
   return result.stdout.trim();
 }
 
-async function getVersion(versionStrategy: string): Promise<string> {
-  if (versionStrategy === 'tag') {
-    return execOutput('git describe --tags');
+async function getVersionData(strategy: string): Promise<{
+  version: string;
+  packageName?: string;
+}> {
+  if (strategy === 'tag') {
+    return {
+      version: await execOutput('git describe --tags'),
+    };
   }
-  throw new Error(`Unsupported versionStrategy ${versionStrategy}`);
+
+  if (strategy === 'lerna') {
+    const tag = await execOutput('git describe --tags');
+    const packageName = (await tag).substring(0, tag.lastIndexOf('@'));
+    const version = (await tag).replace(`${packageName}@`, '');
+    return {
+      packageName,
+      version,
+    };
+  }
+
+  throw new Error(`Unsupported strategy ${strategy}`);
 }
 
 /**
@@ -28,14 +46,25 @@ async function getVersion(versionStrategy: string): Promise<string> {
 async function run() {
   try {
     // Inputs
-    const command = core.getInput('docs-command');
-    const docsRelativePath = core.getInput('docs-path');
     const currentCommit = process.env.GITHUB_SHA;
     const currentBranch = await execOutput(`git branch --show-current`);
     const deploymentBranch = core.getInput('deployment-branch');
-    const version = await getVersion(core.getInput('version-strategy'));
-    const versionSorting = await core.getInput('versions-sorting');
-    const enablePrereleases = Boolean(await core.getInput('enable-prereleases'));
+    const strategy = core.getInput('strategy');
+    const { version, packageName } = await getVersionData(strategy);
+    const packageNameWithoutScope = packageName?.includes('@')
+      ? packageName?.split('/')?.[1]
+      : packageName;
+    const versionSorting = core.getInput('versions-sorting');
+    const enablePrereleases = core.getInput('enable-prereleases').toLowerCase() === 'true';
+
+    const command = core
+      .getInput('docs-command')
+      .replace('{packageName}', packageName ?? '')
+      .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
+    const docsRelativePath = core
+      .getInput('docs-path')
+      .replace('{packageName}', packageName ?? '')
+      .replace('{packageNameWithoutScope}', packageNameWithoutScope ?? '');
 
     core.debug(`Inputs:
       - command: ${command},
@@ -59,7 +88,7 @@ async function run() {
     // 1- Run the command to create the documentation
     try {
       await exec(command);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Documentation creation failed with error: ${error.message}`);
     }
 
@@ -87,7 +116,7 @@ async function run() {
       fs.mkdirSync(DOCS_FOLDER);
 
       const emptyMetadata: MetadataFile = {
-        actionVersion: 1,
+        actionVersion: METADATA_VERSION_LATEST,
         versions: [],
       };
 
@@ -108,9 +137,21 @@ async function run() {
       );
     }
 
+    // Metadata cleanup
+    if (metadataFile.actionVersion < 2) {
+      // Add path data to existing metadata
+      metadataFile.actionVersion = 2;
+      metadataFile.versions = metadataFile.versions.map((v) => ({
+        ...v,
+        path: path.join(DOCS_FOLDER, v.id),
+      }));
+    }
+
     // 6- Create a new version based on the version variable.
-    const versionedDocsPath = path.join(DOCS_FOLDER, version);
-    fs.mkdirSync(path.join(DOCS_FOLDER, version));
+    const versionedDocsPath = path.join(DOCS_FOLDER, packageName ?? '', version);
+    fs.mkdirSync(versionedDocsPath, {
+      recursive: true,
+    });
 
     // 7- Copy the files to the new version
     core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
@@ -123,6 +164,8 @@ async function run() {
     metadataFile.versions.unshift({
       id: version,
       releaseTimestamp: new Date().getTime(),
+      packageName,
+      path: versionedDocsPath,
     });
 
     // 9- TBD: cleanup old versions?
@@ -147,7 +190,7 @@ async function run() {
     await exec(`git commit -m "${commitMessage}"`);
 
     await exec(`git push --set-upstream origin ${deploymentBranch}`);
-  } catch (err) {
+  } catch (err: any) {
     core.setFailed(err.message);
   }
 }

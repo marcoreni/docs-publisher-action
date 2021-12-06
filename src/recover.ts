@@ -34,12 +34,17 @@ async function run() {
   if (!fs.existsSync(metadataFilePath)) {
     const data = [];
     for (const folder of folders) {
-      const { birthtime } = fs.statSync(path.join(docsFolder, folder, 'index.html'));
-      data.push({ id: folder, releaseTimestamp: birthtime.getTime() });
+      const p = path.join(docsFolder, folder, 'index.html');
+      const { birthtime } = fs.statSync(path.join(p, 'index.html'));
+      data.push({
+        id: folder,
+        releaseTimestamp: birthtime.getTime(),
+        path: p,
+      });
     }
     data.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
     metadata = {
-      actionVersion: 1,
+      actionVersion: 2,
       versions: data,
     };
 

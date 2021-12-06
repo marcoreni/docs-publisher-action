@@ -5,7 +5,7 @@
   - [`deployment-branch`](#deployment-branch)
   - [`docs-command`](#docs-command)
   - [`docs-path`](#docs-path)
-  - [`version-strategy`](#version-strategy)
+  - [`strategy`](#strategy)
   - [`versions-sorting`](#versions-sorting)
   - [`enable-prereleases`](#enable-prereleases)
 - [Example usage](#example-usage)
@@ -43,15 +43,23 @@ it's better to avoid messing with the branch.
 
 ### `docs-command`
 
-**Required** The command to be run inside the repository to create the docs
+**Required** The command to be run inside the repository to create the docs. You may provide the following placeholders:  
+
+- `{packageName}`: will work if you are using `lerna` strategy, it will be the package name without the version.
+- `{packageNameWithoutScope}`: will work if you are using `lerna` strategy, it will be the package name without the version and the scope
+  If the package has no scope, it will be the same as the package name.
 
 ### `docs-path`
 
 **Required** The path where documentation will be found once docs are created. Path is relative to the root of the project
 
-### `version-strategy`
+- `{packageName}`: will work if you are using `lerna` strategy, it will be the package name without the version.
+- `{packageNameWithoutScope}`: will work if you are using `lerna` strategy, it will be the package name without the version and the scope
+  If the package has no scope, it will be the same as the package name.
 
-The strategy to use to fetch the version. Currently, only `tag` is supported.
+### `strategy`
+
+The strategy to use to fetch the version. Currently, `tag` and `lerna` are supported.
 
 **Defaults to**: `tag`
 
@@ -71,11 +79,6 @@ The strategy to use to sort the versions in the list. Possible values:
 Split the versions list into two separate lists of releases and prereleases, using `semver`.
 
 **Defaults to**: `false`
-
-
-Split the versions list into releases and prereleases
-
-**Defaults to**: `tag`
 
 ## Example usage
 
