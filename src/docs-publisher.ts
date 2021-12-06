@@ -10,6 +10,8 @@ import * as path from 'path';
 import { DOCS_FOLDER, MetadataFile, METADATA_FILE } from './constants';
 import { compileAndPersistHomepage } from './utils';
 
+const METADATA_VERSION_LATEST = 2;
+
 async function execOutput(cmd: string) {
   const result = await getExecOutput(cmd);
   return result.stdout.trim();
@@ -114,7 +116,7 @@ async function run() {
       fs.mkdirSync(DOCS_FOLDER);
 
       const emptyMetadata: MetadataFile = {
-        actionVersion: 1,
+        actionVersion: METADATA_VERSION_LATEST,
         versions: [],
       };
 
@@ -133,6 +135,16 @@ async function run() {
       throw new Error(
         `The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`,
       );
+    }
+
+    // Metadata cleanup
+    if (metadataFile.actionVersion < 2) {
+      // Add path data to existing metadata
+      metadataFile.actionVersion = 2;
+      metadataFile.versions = metadataFile.versions.map((v) => ({
+        ...v,
+        path: path.join(DOCS_FOLDER, v.id),
+      }));
     }
 
     // 6- Create a new version based on the version variable.
