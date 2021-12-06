@@ -15,10 +15,26 @@ async function execOutput(cmd: string) {
   return result.stdout.trim();
 }
 
-async function getVersion(versionStrategy: string): Promise<string> {
+async function getVersionData(versionStrategy: string): Promise<{
+  version: string;
+  packageName?: string;
+}> {
   if (versionStrategy === 'tag') {
-    return execOutput('git describe --tags');
+    return {
+      version: await execOutput('git describe --tags'),
+    };
   }
+
+  if (versionStrategy === 'monorepo-tag') {
+    const tag = await execOutput('git describe --tags');
+    const packageName = (await tag).substring(0, tag.lastIndexOf('@'));
+    const version = (await tag).replace(packageName, '');
+    return {
+      packageName,
+      version,
+    };
+  }
+
   throw new Error(`Unsupported versionStrategy ${versionStrategy}`);
 }
 
@@ -33,9 +49,9 @@ async function run() {
     const currentCommit = process.env.GITHUB_SHA;
     const currentBranch = await execOutput(`git branch --show-current`);
     const deploymentBranch = core.getInput('deployment-branch');
-    const version = await getVersion(core.getInput('version-strategy'));
-    const versionSorting = await core.getInput('versions-sorting');
-    const enablePrereleases = Boolean(await core.getInput('enable-prereleases'));
+    const { version, packageName } = await getVersionData(core.getInput('version-strategy'));
+    const versionSorting = core.getInput('versions-sorting');
+    const enablePrereleases = Boolean(core.getInput('enable-prereleases'));
 
     core.debug(`Inputs:
       - command: ${command},
@@ -59,7 +75,7 @@ async function run() {
     // 1- Run the command to create the documentation
     try {
       await exec(command);
-    } catch (error) {
+    } catch (error: any) {
       throw new Error(`Documentation creation failed with error: ${error.message}`);
     }
 
@@ -109,8 +125,10 @@ async function run() {
     }
 
     // 6- Create a new version based on the version variable.
-    const versionedDocsPath = path.join(DOCS_FOLDER, version);
-    fs.mkdirSync(path.join(DOCS_FOLDER, version));
+    const versionedDocsPath = path.join(DOCS_FOLDER, version, packageName ?? '');
+    fs.mkdirSync(versionedDocsPath, {
+      recursive: true,
+    });
 
     // 7- Copy the files to the new version
     core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
@@ -123,6 +141,7 @@ async function run() {
     metadataFile.versions.unshift({
       id: version,
       releaseTimestamp: new Date().getTime(),
+      packageName,
     });
 
     // 9- TBD: cleanup old versions?
@@ -147,7 +166,7 @@ async function run() {
     await exec(`git commit -m "${commitMessage}"`);
 
     await exec(`git push --set-upstream origin ${deploymentBranch}`);
-  } catch (err) {
+  } catch (err: any) {
     core.setFailed(err.message);
   }
 }

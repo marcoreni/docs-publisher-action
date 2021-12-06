@@ -51,7 +51,7 @@ it's better to avoid messing with the branch.
 
 ### `version-strategy`
 
-The strategy to use to fetch the version. Currently, only `tag` is supported.
+The strategy to use to fetch the version. Currently, `tag` and `monorepo-tag` is supported.
 
 **Defaults to**: `tag`
 

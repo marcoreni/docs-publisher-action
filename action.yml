@@ -21,7 +21,7 @@ inputs:
     default: ${{ github.token }}
   version-strategy:
     required: true
-    description: The strategy to use to fetch the version. Currently, only "tag" is supported.
+    description: The strategy to use to fetch the version. Currently, "tag" and "monorepo-tag" are supported.
     default: 'tag'
   
   versions-sorting:
