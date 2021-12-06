@@ -49,7 +49,11 @@ async function run() {
       throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
     }
 
-    const strategyData = {} as Record<string, any>;
+    const strategyData = {} as {
+      version?: string;
+      // FIXME we need `Awaited`
+      packages?: any;
+    };
 
     if (strategy === 'lerna') {
       const packages = await lernaStrategy();
@@ -118,10 +122,10 @@ async function run() {
         path: path.join(DOCS_FOLDER, v.id),
       }));
     }
-    const versionedDocsPath = path.join(DOCS_FOLDER, strategyData.version);
 
     // Decide which packages must be published
     if (strategy === 'tag' && strategyData.version) {
+      const versionedDocsPath = path.join(DOCS_FOLDER, strategyData.version);
       const docsPath = path.join(currentPath, docsRelativePath);
 
       // 6- Create a new version based on the version variable.
@@ -144,11 +148,14 @@ async function run() {
       });
     } else if (strategy === 'lerna' && strategyData.packages) {
       for (const p of strategyData.packages) {
+        core.debug(`Working on ${p.name} - ${p.location}`);
         const docsPath = path.join(
           currentPath,
           p.location.replace(currentPath, ''),
           docsRelativePath,
         );
+
+        const versionedDocsPath = path.join(DOCS_FOLDER, p.name, p.version);
 
         // 6- Create a new version based on the version variable.
         fs.mkdirSync(versionedDocsPath, {
