@@ -18875,7 +18875,7 @@ const os_1 = __nccwpck_require__(2037);
 const path_1 = __importDefault(__nccwpck_require__(1017));
 exports.DOCS_FOLDER = 'docs';
 exports.INDEX_FILE = 'index.html';
-exports.tempPath = (0, fs_1.mkdtempSync)((0, os_1.tmpdir)());
+exports.tempPath = (0, fs_1.mkdtempSync)(path_1.default.join((0, os_1.tmpdir)(), 'docs-publisher'));
 exports.metadataFilePath = `${path_1.default.join(exports.tempPath, 'metadata.json')}`;
 
 
