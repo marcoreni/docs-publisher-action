@@ -18861,15 +18861,22 @@ try {
 /***/ }),
 
 /***/ 9042:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.INDEX_FILE = exports.METADATA_FILE = exports.DOCS_FOLDER = void 0;
+exports.metadataFilePath = exports.tempPath = exports.INDEX_FILE = exports.DOCS_FOLDER = void 0;
+const fs_1 = __nccwpck_require__(7147);
+const os_1 = __nccwpck_require__(2037);
+const path_1 = __importDefault(__nccwpck_require__(1017));
 exports.DOCS_FOLDER = 'docs';
-exports.METADATA_FILE = 'metadata.json';
 exports.INDEX_FILE = 'index.html';
+exports.tempPath = (0, fs_1.mkdtempSync)((0, os_1.tmpdir)());
+exports.metadataFilePath = `${path_1.default.join(exports.tempPath, 'metadata.json')}`;
 
 
 /***/ }),
@@ -18903,7 +18910,6 @@ const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const io_1 = __nccwpck_require__(7436);
 const exec_1 = __nccwpck_require__(1514);
-const os_1 = __nccwpck_require__(2037);
 const fs = __importStar(__nccwpck_require__(7147));
 const path = __importStar(__nccwpck_require__(1017));
 const constants_1 = __nccwpck_require__(9042);
@@ -18940,36 +18946,21 @@ async function run() {
         if (currentBranch === deploymentBranch) {
             throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
         }
-        const strategyData = {};
-        if (strategy === 'lerna') {
-            const packages = await (0, lerna_1.lernaStrategy)();
-            strategyData.packages = packages;
-        }
-        else if (strategy === 'tag') {
-            const version = await (0, utils_1.execOutput)('git describe --tags');
-            strategyData.version = version;
-        }
-        // 1- Run the command to create the documentation
-        try {
-            await (0, exec_1.exec)(command);
-        }
-        catch (error) {
-            throw new Error(`Documentation creation failed with error: ${error.message}`);
-        }
-        const currentPath = process.cwd();
-        // 2- Create a temporary dir
-        const tempPath = await fs.mkdtempSync(path.join((0, os_1.tmpdir)(), `${repository}-${deploymentBranch}`));
-        await (0, exec_1.exec)(`git clone ${gitRepositoryUrl} ${tempPath}`);
-        // 3- Enter the temporary dir
-        process.chdir(tempPath);
-        // 4- Switch to the deployment branch
-        if ((await (0, exec_1.exec)(`git switch ${deploymentBranch}`, undefined, {
+        const gitRepoPath = process.cwd();
+        // 2- Create a temporary dir and clone the repo there
+        await (0, exec_1.exec)(`git clone ${gitRepositoryUrl} ${constants_1.tempPath}`);
+        /**
+         * Folder on the "orphan branch" where docs will be put
+         */
+        const gitDocsFolder = path.join(constants_1.tempPath, constants_1.DOCS_FOLDER);
+        // 3- Switch to the deployment branch
+        if ((await (0, exec_1.exec)(`git -C ${constants_1.tempPath} switch ${deploymentBranch}`, undefined, {
             ignoreReturnCode: true,
         })) !== 0) {
             // If the switch fails, we will create a new orphan branch
-            await (0, exec_1.exec)(`git switch --orphan ${deploymentBranch}`);
+            await (0, exec_1.exec)(`git -C ${constants_1.tempPath} switch --orphan ${deploymentBranch}`);
             // Then we initialize stuff
-            fs.mkdirSync(constants_1.DOCS_FOLDER);
+            fs.mkdirSync(gitDocsFolder);
             const emptyMetadata = {
                 actionVersion: METADATA_VERSION_LATEST,
                 versions: [],
@@ -18977,7 +18968,7 @@ async function run() {
             (0, utils_1.writeMetadataFile)(emptyMetadata);
         }
         // Check if this branch is managed by this action.
-        if (!fs.existsSync(constants_1.METADATA_FILE)) {
+        if (!fs.existsSync(constants_1.metadataFilePath)) {
             throw new Error(`The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`);
         }
         const metadataFile = (0, utils_1.readMetadataFile)();
@@ -18990,42 +18981,63 @@ async function run() {
             metadataFile.actionVersion = 2;
             metadataFile.versions = metadataFile.versions.map((v) => ({
                 ...v,
-                path: path.join(constants_1.DOCS_FOLDER, v.id),
+                path: path.join(gitDocsFolder, v.id),
             }));
         }
+        // 4- Run the command to create the documentation
+        try {
+            await (0, exec_1.exec)(command);
+        }
+        catch (error) {
+            throw new Error(`Documentation creation failed with error: ${error.message}`);
+        }
         // Decide which packages must be published
-        if (strategy === 'tag' && strategyData.version) {
-            const versionedDocsPath = path.join(constants_1.DOCS_FOLDER, strategyData.version);
-            const docsPath = path.join(currentPath, docsRelativePath);
+        if (strategy === 'tag') {
+            const version = await (0, utils_1.execOutput)('git describe --tags');
+            /**
+             * Folder on the orphaned branch where the docs for this version will be put
+             */
+            const versionedDocsPath = path.join(gitDocsFolder, version);
+            /**
+             * Folder on the repo where the built docs are located
+             */
+            const builtDocsPath = path.join(gitRepoPath, docsRelativePath);
             // 6- Create a new version based on the version variable.
             fs.mkdirSync(versionedDocsPath, {
                 recursive: true,
             });
             // 7- Copy the files to the new version
-            core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-            await (0, io_1.cp)(docsPath, versionedDocsPath, {
+            core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
+            await (0, io_1.cp)(builtDocsPath, versionedDocsPath, {
                 recursive: true,
                 copySourceDirectory: false,
             });
             // 8- Create the new version inside versions.json
             metadataFile.versions.unshift({
-                id: strategyData.version,
+                id: version,
                 releaseTimestamp: new Date().getTime(),
                 path: versionedDocsPath,
             });
         }
-        else if (strategy === 'lerna' && strategyData.packages) {
-            for (const p of strategyData.packages) {
-                core.debug(`Working on ${p.name} - ${p.location}`);
-                const docsPath = path.join(currentPath, p.location.replace(currentPath, ''), docsRelativePath);
-                const versionedDocsPath = path.join(constants_1.DOCS_FOLDER, p.name, p.version);
+        else if (strategy === 'lerna') {
+            const packages = await (0, lerna_1.lernaStrategy)(metadataFile);
+            for (const p of packages) {
+                core.info(`Working on ${p.name} - ${p.location}`);
+                /**
+                 * Folder on the orphaned branch where the docs for this version will be put
+                 */
+                const builtDocsPath = path.join(gitRepoPath, p.location.replace(gitRepoPath, ''), docsRelativePath);
+                /**
+                 * Folder on the orphaned branch where the docs for this version will be put
+                 */
+                const versionedDocsPath = path.join(gitDocsFolder, p.name, p.version);
                 // 6- Create a new version based on the version variable.
                 fs.mkdirSync(versionedDocsPath, {
                     recursive: true,
                 });
                 // 7- Copy the files to the new version
-                core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-                await (0, io_1.cp)(docsPath, versionedDocsPath, {
+                core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
+                await (0, io_1.cp)(builtDocsPath, versionedDocsPath, {
                     recursive: true,
                     copySourceDirectory: false,
                 });
@@ -19073,18 +19085,8 @@ run();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.lernaStrategy = void 0;
 const utils_1 = __nccwpck_require__(1314);
-async function lernaStrategy() {
+async function lernaStrategy(metadataFile) {
     const data = JSON.parse(await (0, utils_1.execOutput)('lerna list --json'));
-    let metadataFile;
-    try {
-        metadataFile = (0, utils_1.readMetadataFile)();
-    }
-    catch (e) {
-        return data;
-    }
-    if (typeof metadataFile === 'undefined') {
-        return data;
-    }
     // Remove already published packages docs
     const unpublishedDocs = data.filter((d) => !metadataFile.versions.find((v) => v.packageName === d.name && v.id.includes(d.version)));
     return unpublishedDocs;
@@ -19322,11 +19324,11 @@ async function execOutput(cmd) {
 }
 exports.execOutput = execOutput;
 function readMetadataFile() {
-    return JSON.parse(fs_1.default.readFileSync(constants_1.METADATA_FILE, 'utf8'));
+    return JSON.parse(fs_1.default.readFileSync(constants_1.metadataFilePath, 'utf8'));
 }
 exports.readMetadataFile = readMetadataFile;
 function writeMetadataFile(contents) {
-    fs_1.default.writeFileSync(constants_1.METADATA_FILE, JSON.stringify(contents), 'utf-8');
+    fs_1.default.writeFileSync(constants_1.metadataFilePath, JSON.stringify(contents), 'utf-8');
 }
 exports.writeMetadataFile = writeMetadataFile;
 
