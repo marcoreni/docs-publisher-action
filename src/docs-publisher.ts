@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { cp } from '@actions/io';
-import { exec } from '@actions/exec';
+import { exec, ExecOptions } from '@actions/exec';
 
 import * as fs from 'fs';
 import * as path from 'path';
@@ -12,6 +12,9 @@ import { execOutput, readMetadataFile, writeMetadataFile } from './utils';
 import { lernaStrategy } from './strategies/lerna';
 
 const METADATA_VERSION_LATEST = 2;
+
+const execGitInTempPath = (command: string, args?: string[], options?: ExecOptions) =>
+  exec(`git ${command}`, args, { ...options, cwd: tempPath });
 
 /**
  * NOTE: the following function is inspired by https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts
@@ -60,12 +63,12 @@ async function run() {
 
     // 3- Switch to the deployment branch
     if (
-      (await exec(`git -C ${tempPath} switch ${deploymentBranch}`, undefined, {
+      (await execGitInTempPath(`switch ${deploymentBranch}`, undefined, {
         ignoreReturnCode: true,
       })) !== 0
     ) {
       // If the switch fails, we will create a new orphan branch
-      await exec(`git -C ${tempPath} switch --orphan ${deploymentBranch}`);
+      await execGitInTempPath(`switch --orphan ${deploymentBranch}`);
 
       // Then we initialize stuff
       fs.mkdirSync(gitDocsFolder);
@@ -194,14 +197,14 @@ async function run() {
     });
 
     // 12- Commit && push
-    await exec('git config --local user.name "gh-actions"');
-    await exec('git config --local user.email "gh-actions@github.com"');
+    await execGitInTempPath(`config --local user.name "gh-actions"`);
+    await execGitInTempPath(`config --local user.email "gh-actions@github.com"`);
 
-    await exec('git add -A');
+    await execGitInTempPath(`add -A`);
     const commitMessage = `Deploy docs - based on ${currentCommit}`;
-    await exec(`git commit -m "${commitMessage}"`);
+    await execGitInTempPath(`commit -m "${commitMessage}"`);
 
-    await exec(`git push --set-upstream origin ${deploymentBranch}`);
+    await execGitInTempPath(`push --set-upstream origin ${deploymentBranch}`);
   } catch (err: any) {
     core.setFailed(err.message);
   }
