@@ -19244,7 +19244,7 @@ const constants_1 = __nccwpck_require__(9042);
 const utils_1 = __nccwpck_require__(1314);
 const homepage_hbs_1 = __importDefault(__nccwpck_require__(5570));
 Handlebars.registerHelper('prettifyDate', function (timestamp) {
-    return new Date(timestamp).toLocaleString();
+    return new Date(timestamp).toLocaleString('it-IT');
 });
 Handlebars.registerHelper('ifeq', function (a, b, options) {
     if (a === b) {
