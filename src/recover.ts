@@ -4,7 +4,7 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { DOCS_FOLDER, MetadataFile, METADATA_FILE } from './constants';
+import { DOCS_FOLDER, MetadataFile, metadataFilePath } from './constants';
 import { compileAndPersistHomepage } from './templating';
 import { readMetadataFile, writeMetadataFile } from './utils';
 
@@ -28,7 +28,7 @@ async function run() {
   }
 
   const folders = fs.readdirSync(docsFolder);
-  const metadataFilePath = path.join(folder, METADATA_FILE);
+
   let metadata: MetadataFile;
 
   // Create versions.file

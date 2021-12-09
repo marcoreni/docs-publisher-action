@@ -1,7 +1,7 @@
 import fs from 'fs';
 
 import semver from 'semver';
-import { MetadataFile, METADATA_FILE } from './constants';
+import { MetadataFile, metadataFilePath } from './constants';
 import { getExecOutput } from '@actions/exec';
 
 type IndexStrategy = 'timestamp-asc' | 'timestamp-desc' | 'semver-asc' | 'semver-desc' | string;
@@ -34,9 +34,9 @@ export async function execOutput(cmd: string) {
 }
 
 export function readMetadataFile(): MetadataFile {
-  return JSON.parse(fs.readFileSync(METADATA_FILE, 'utf8')) as MetadataFile;
+  return JSON.parse(fs.readFileSync(metadataFilePath, 'utf8')) as MetadataFile;
 }
 
 export function writeMetadataFile(contents: MetadataFile) {
-  fs.writeFileSync(METADATA_FILE, JSON.stringify(contents), 'utf-8');
+  fs.writeFileSync(metadataFilePath, JSON.stringify(contents), 'utf-8');
 }

@@ -3,11 +3,10 @@ import * as github from '@actions/github';
 import { cp } from '@actions/io';
 import { exec } from '@actions/exec';
 
-import { tmpdir } from 'os';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { DOCS_FOLDER, MetadataFile, METADATA_FILE } from './constants';
+import { DOCS_FOLDER, MetadataFile, metadataFilePath, tempPath } from './constants';
 import { compileAndPersistHomepage } from './templating';
 import { execOutput, readMetadataFile, writeMetadataFile } from './utils';
 import { lernaStrategy } from './strategies/lerna';
@@ -49,48 +48,27 @@ async function run() {
       throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
     }
 
-    const strategyData = {} as {
-      version?: string;
-      // FIXME we need `Awaited`
-      packages?: any;
-    };
+    const gitRepoPath = process.cwd();
 
-    if (strategy === 'lerna') {
-      const packages = await lernaStrategy();
-      strategyData.packages = packages;
-    } else if (strategy === 'tag') {
-      const version = await execOutput('git describe --tags');
-      strategyData.version = version;
-    }
-
-    // 1- Run the command to create the documentation
-    try {
-      await exec(command);
-    } catch (error: any) {
-      throw new Error(`Documentation creation failed with error: ${error.message}`);
-    }
-
-    const currentPath = process.cwd();
-
-    // 2- Create a temporary dir
-    const tempPath = await fs.mkdtempSync(path.join(tmpdir(), `${repository}-${deploymentBranch}`));
-
+    // 2- Create a temporary dir and clone the repo there
     await exec(`git clone ${gitRepositoryUrl} ${tempPath}`);
 
-    // 3- Enter the temporary dir
-    process.chdir(tempPath);
+    /**
+     * Folder on the "orphan branch" where docs will be put
+     */
+    const gitDocsFolder = path.join(tempPath, DOCS_FOLDER);
 
-    // 4- Switch to the deployment branch
+    // 3- Switch to the deployment branch
     if (
-      (await exec(`git switch ${deploymentBranch}`, undefined, {
+      (await exec(`git -C ${tempPath} switch ${deploymentBranch}`, undefined, {
         ignoreReturnCode: true,
       })) !== 0
     ) {
       // If the switch fails, we will create a new orphan branch
-      await exec(`git switch --orphan ${deploymentBranch}`);
+      await exec(`git -C ${tempPath} switch --orphan ${deploymentBranch}`);
 
       // Then we initialize stuff
-      fs.mkdirSync(DOCS_FOLDER);
+      fs.mkdirSync(gitDocsFolder);
 
       const emptyMetadata: MetadataFile = {
         actionVersion: METADATA_VERSION_LATEST,
@@ -100,7 +78,7 @@ async function run() {
     }
 
     // Check if this branch is managed by this action.
-    if (!fs.existsSync(METADATA_FILE)) {
+    if (!fs.existsSync(metadataFilePath)) {
       throw new Error(
         `The branch ${deploymentBranch} exists, but it doesn't seem to have been initialized by this action. This action only works with a dedicated branch`,
       );
@@ -119,14 +97,29 @@ async function run() {
       metadataFile.actionVersion = 2;
       metadataFile.versions = metadataFile.versions.map((v) => ({
         ...v,
-        path: path.join(DOCS_FOLDER, v.id),
+        path: path.join(gitDocsFolder, v.id),
       }));
     }
 
+    // 4- Run the command to create the documentation
+    try {
+      await exec(command);
+    } catch (error: any) {
+      throw new Error(`Documentation creation failed with error: ${error.message}`);
+    }
+
     // Decide which packages must be published
-    if (strategy === 'tag' && strategyData.version) {
-      const versionedDocsPath = path.join(DOCS_FOLDER, strategyData.version);
-      const docsPath = path.join(currentPath, docsRelativePath);
+    if (strategy === 'tag') {
+      const version = await execOutput('git describe --tags');
+      /**
+       * Folder on the orphaned branch where the docs for this version will be put
+       */
+      const versionedDocsPath = path.join(gitDocsFolder, version);
+
+      /**
+       * Folder on the repo where the built docs are located
+       */
+      const builtDocsPath = path.join(gitRepoPath, docsRelativePath);
 
       // 6- Create a new version based on the version variable.
       fs.mkdirSync(versionedDocsPath, {
@@ -134,28 +127,36 @@ async function run() {
       });
 
       // 7- Copy the files to the new version
-      core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-      await cp(docsPath, versionedDocsPath, {
+      core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
+      await cp(builtDocsPath, versionedDocsPath, {
         recursive: true,
         copySourceDirectory: false,
       });
 
       // 8- Create the new version inside versions.json
       metadataFile.versions.unshift({
-        id: strategyData.version,
+        id: version,
         releaseTimestamp: new Date().getTime(),
         path: versionedDocsPath,
       });
-    } else if (strategy === 'lerna' && strategyData.packages) {
-      for (const p of strategyData.packages) {
-        core.debug(`Working on ${p.name} - ${p.location}`);
-        const docsPath = path.join(
-          currentPath,
-          p.location.replace(currentPath, ''),
+    } else if (strategy === 'lerna') {
+      const packages = await lernaStrategy(metadataFile);
+
+      for (const p of packages) {
+        core.info(`Working on ${p.name} - ${p.location}`);
+        /**
+         * Folder on the orphaned branch where the docs for this version will be put
+         */
+        const builtDocsPath = path.join(
+          gitRepoPath,
+          p.location.replace(gitRepoPath, ''),
           docsRelativePath,
         );
 
-        const versionedDocsPath = path.join(DOCS_FOLDER, p.name, p.version);
+        /**
+         * Folder on the orphaned branch where the docs for this version will be put
+         */
+        const versionedDocsPath = path.join(gitDocsFolder, p.name, p.version);
 
         // 6- Create a new version based on the version variable.
         fs.mkdirSync(versionedDocsPath, {
@@ -163,8 +164,8 @@ async function run() {
         });
 
         // 7- Copy the files to the new version
-        core.debug(`Copying docs from ${docsPath} to ${versionedDocsPath}`);
-        await cp(docsPath, versionedDocsPath, {
+        core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
+        await cp(builtDocsPath, versionedDocsPath, {
           recursive: true,
           copySourceDirectory: false,
         });

@@ -1,7 +1,8 @@
+import * as core from '@actions/core';
 import { MetadataFile } from '../constants';
 import { execOutput, readMetadataFile } from '../utils';
 
-export async function lernaStrategy(): Promise<
+export async function lernaStrategy(metadataFile: MetadataFile): Promise<
   {
     name: string;
     version: string;
@@ -13,16 +14,6 @@ export async function lernaStrategy(): Promise<
     version: string;
     location: string;
   }[];
-
-  let metadataFile: MetadataFile;
-  try {
-    metadataFile = readMetadataFile();
-  } catch (e) {
-    return data;
-  }
-  if (typeof metadataFile === 'undefined') {
-    return data;
-  }
 
   // Remove already published packages docs
   const unpublishedDocs = data.filter(
