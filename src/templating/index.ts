@@ -7,7 +7,7 @@ import { sortVersions } from '../utils';
 import homepageTemplate from './homepage.hbs';
 
 Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
-  return new Date(timestamp).toLocaleString();
+  return new Date(timestamp).toLocaleString('it-IT');
 });
 
 Handlebars.registerHelper('ifeq', function (this: any, a, b, options) {
