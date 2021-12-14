@@ -6,7 +6,7 @@ import { exec, ExecOptions } from '@actions/exec';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { DOCS_FOLDER, MetadataFile, metadataFilePath, tempPath } from './constants';
+import { DOCS_FOLDER, MetadataFile, metadataFilePath, tempPath as gitTempPath } from './constants';
 import { compileAndPersistHomepage } from './templating';
 import { execOutput, readMetadataFile, writeMetadataFile } from './utils';
 import { lernaStrategy } from './strategies/lerna';
@@ -14,7 +14,7 @@ import { lernaStrategy } from './strategies/lerna';
 const METADATA_VERSION_LATEST = 2;
 
 const execGitInTempPath = (command: string, args?: string[], options?: ExecOptions) =>
-  exec(`git ${command}`, args, { ...options, cwd: tempPath });
+  exec(`git ${command}`, args, { ...options, cwd: gitTempPath });
 
 /**
  * NOTE: the following function is inspired by https://github.com/facebook/docusaurus/blob/main/packages/docusaurus/src/commands/deploy.ts
@@ -51,15 +51,15 @@ async function run() {
       throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
     }
 
-    const gitRepoPath = process.cwd();
+    const gitRepoAbsolutePath = process.cwd();
 
     // 2- Create a temporary dir and clone the repo there
-    await exec(`git clone ${gitRepositoryUrl} ${tempPath}`);
+    await exec(`git clone ${gitRepositoryUrl} ${gitTempPath}`);
 
     /**
      * Folder on the "orphan branch" where docs will be put
      */
-    const gitDocsFolder = path.join(tempPath, DOCS_FOLDER);
+    const gitDocsAbsolutePath = path.join(gitTempPath, DOCS_FOLDER);
 
     // 3- Switch to the deployment branch
     if (
@@ -71,7 +71,7 @@ async function run() {
       await execGitInTempPath(`switch --orphan ${deploymentBranch}`);
 
       // Then we initialize stuff
-      fs.mkdirSync(gitDocsFolder);
+      fs.mkdirSync(gitDocsAbsolutePath);
 
       const emptyMetadata: MetadataFile = {
         actionVersion: METADATA_VERSION_LATEST,
@@ -100,7 +100,7 @@ async function run() {
       metadataFile.actionVersion = 2;
       metadataFile.versions = metadataFile.versions.map((v) => ({
         ...v,
-        path: path.join(gitDocsFolder, v.id),
+        path: path.join(DOCS_FOLDER, v.id),
       }));
     }
 
@@ -117,21 +117,21 @@ async function run() {
       /**
        * Folder on the orphaned branch where the docs for this version will be put
        */
-      const versionedDocsPath = path.join(gitDocsFolder, version);
+      const versionedDocsAbsolutePath = path.join(gitDocsAbsolutePath, version);
 
       /**
        * Folder on the repo where the built docs are located
        */
-      const builtDocsPath = path.join(gitRepoPath, docsRelativePath);
+      const docsAbsolutePath = path.join(gitRepoAbsolutePath, docsRelativePath);
 
       // 6- Create a new version based on the version variable.
-      fs.mkdirSync(versionedDocsPath, {
+      fs.mkdirSync(versionedDocsAbsolutePath, {
         recursive: true,
       });
 
       // 7- Copy the files to the new version
-      core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
-      await cp(builtDocsPath, versionedDocsPath, {
+      core.info(`Copying docs from ${docsAbsolutePath} to ${versionedDocsAbsolutePath}`);
+      await cp(docsAbsolutePath, versionedDocsAbsolutePath, {
         recursive: true,
         copySourceDirectory: false,
       });
@@ -140,35 +140,36 @@ async function run() {
       metadataFile.versions.unshift({
         id: version,
         releaseTimestamp: new Date().getTime(),
-        path: versionedDocsPath,
+        path: versionedDocsAbsolutePath.replace(gitDocsAbsolutePath, ''),
       });
     } else if (strategy === 'lerna') {
       const packages = await lernaStrategy(metadataFile);
 
       for (const p of packages) {
         core.info(`Working on ${p.name} - ${p.location}`);
+        const packageRelativePath = p.location.replace(gitRepoAbsolutePath, '');
         /**
          * Folder on the orphaned branch where the docs for this version will be put
          */
-        const builtDocsPath = path.join(
-          gitRepoPath,
-          p.location.replace(gitRepoPath, ''),
+        const docsAbsolutePath = path.join(
+          gitRepoAbsolutePath,
+          packageRelativePath,
           docsRelativePath,
         );
 
         /**
          * Folder on the orphaned branch where the docs for this version will be put
          */
-        const versionedDocsPath = path.join(gitDocsFolder, p.name, p.version);
+        const versionedDocsAbsolutePath = path.join(gitDocsAbsolutePath, p.name, p.version);
 
         // 6- Create a new version based on the version variable.
-        fs.mkdirSync(versionedDocsPath, {
+        fs.mkdirSync(versionedDocsAbsolutePath, {
           recursive: true,
         });
 
         // 7- Copy the files to the new version
-        core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
-        await cp(builtDocsPath, versionedDocsPath, {
+        core.info(`Copying docs from ${docsAbsolutePath} to ${versionedDocsAbsolutePath}`);
+        await cp(docsAbsolutePath, versionedDocsAbsolutePath, {
           recursive: true,
           copySourceDirectory: false,
         });
@@ -177,7 +178,7 @@ async function run() {
         metadataFile.versions.unshift({
           id: p.version,
           releaseTimestamp: new Date().getTime(),
-          path: versionedDocsPath,
+          path: versionedDocsAbsolutePath.replace(gitDocsAbsolutePath, ''),,
           packageName: p.name,
         });
       }
@@ -194,6 +195,7 @@ async function run() {
       metadataFile,
       versionSorting,
       enablePrereleases,
+      workingDir: gitTempPath,
     });
 
     // 12- Commit && push
