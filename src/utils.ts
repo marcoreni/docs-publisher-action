@@ -15,16 +15,17 @@ export function sortVersions(
   strategy: IndexStrategy,
 ): MetadataFile['versions'] | undefined {
   if (!versions || versions.length === 0) return versions;
+  const sortedVersions = [...versions];
   switch (strategy) {
     case 'timestamp-asc':
-      return versions.sort((a, b) => a.releaseTimestamp - b.releaseTimestamp);
+      return sortedVersions.sort((a, b) => a.releaseTimestamp - b.releaseTimestamp);
     case 'timestamp-desc':
-      return versions.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
+      return sortedVersions.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
     case 'semver-asc':
-      return versions.sort((a, b) => semver.compareBuild(a.id, b.id));
+      return sortedVersions.sort((a, b) => semver.compareBuild(a.id, b.id));
     case 'semver-desc':
     default:
-      return versions.sort((a, b) => semver.compareBuild(b.id, a.id));
+      return sortedVersions.sort((a, b) => semver.compareBuild(b.id, a.id));
   }
 }
 
@@ -33,10 +34,10 @@ export async function execOutput(cmd: string) {
   return result.stdout.trim();
 }
 
-export function readMetadataFile(): MetadataFile {
-  return JSON.parse(fs.readFileSync(metadataFilePath, 'utf8')) as MetadataFile;
+export function readMetadataFile(path = metadataFilePath): MetadataFile {
+  return JSON.parse(fs.readFileSync(path, 'utf8')) as MetadataFile;
 }
 
-export function writeMetadataFile(contents: MetadataFile) {
-  fs.writeFileSync(metadataFilePath, JSON.stringify(contents), 'utf-8');
+export function writeMetadataFile(contents: MetadataFile, path = metadataFilePath) {
+  fs.writeFileSync(path, JSON.stringify(contents), 'utf-8');
 }

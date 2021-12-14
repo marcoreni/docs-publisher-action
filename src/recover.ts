@@ -4,7 +4,7 @@
  */
 import fs from 'fs';
 import path from 'path';
-import { DOCS_FOLDER, MetadataFile, metadataFilePath } from './constants';
+import { DOCS_FOLDER, MetadataFile } from './constants';
 import { compileAndPersistHomepage } from './templating';
 import { readMetadataFile, writeMetadataFile } from './utils';
 
@@ -31,11 +31,13 @@ async function run() {
 
   let metadata: MetadataFile;
 
+  const metadataFilePath = path.join(folder, 'metadata.json');
   // Create versions.file
   if (!fs.existsSync(metadataFilePath)) {
+    console.log('Does not exist, will create');
     const data = [];
     for (const folder of folders) {
-      const p = path.join(docsFolder, folder, 'index.html');
+      const p = path.join(docsFolder, folder);
       const { birthtime } = fs.statSync(path.join(p, 'index.html'));
       data.push({
         id: folder,
@@ -49,9 +51,9 @@ async function run() {
       versions: data,
     };
 
-    writeMetadataFile(metadata);
+    writeMetadataFile(metadata, metadataFilePath);
   } else {
-    metadata = readMetadataFile();
+    metadata = readMetadataFile(metadataFilePath);
   }
 
   // Recompile hp
@@ -59,7 +61,7 @@ async function run() {
     repository,
     repositoryUrl,
     metadataFile: metadata,
-    workingDir: folder,
+    persistDir: folder,
     versionSorting,
     enablePrereleases,
   });

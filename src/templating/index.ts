@@ -21,14 +21,14 @@ export function compileAndPersistHomepage({
   repository,
   repositoryUrl,
   metadataFile,
-  workingDir = process.cwd(),
+  persistDir = process.cwd(),
   versionSorting = 'timestamp-desc',
   enablePrereleases = false,
 }: {
   repository: string;
   repositoryUrl: string;
   metadataFile: MetadataFile;
-  workingDir?: string;
+  persistDir?: string;
   versionSorting?: string;
   enablePrereleases?: boolean;
 }) {
@@ -57,11 +57,11 @@ export function compileAndPersistHomepage({
 
   Object.entries(packages).forEach(([_, pkg]) => {
     pkg.versions = sortVersions(pkg.versions, versionSorting);
-    pkg.latestVersion = sortVersions(pkg.versions, 'semver-desc')[0];
+    pkg.latestVersion = sortVersions(pkg.versions, 'timestamp-desc')[0];
 
     if (pkg.prereleaseVersions) {
       pkg.prereleaseVersions = sortVersions(pkg.prereleaseVersions, versionSorting);
-      pkg.latestPrereleaseVersion = sortVersions(pkg.prereleaseVersions, 'semver-desc')[0];
+      pkg.latestPrereleaseVersion = sortVersions(pkg.prereleaseVersions, 'timestamp-desc')[0];
     }
   });
 
@@ -75,5 +75,5 @@ export function compileAndPersistHomepage({
   const homepageCompiler = Handlebars.compile(homepageTemplate, { noEscape: true });
   const homepage = homepageCompiler(data);
 
-  fs.writeFileSync(path.join(workingDir, INDEX_FILE), homepage, 'utf-8');
+  fs.writeFileSync(path.join(persistDir, INDEX_FILE), homepage, 'utf-8');
 }
