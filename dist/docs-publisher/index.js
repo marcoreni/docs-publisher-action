@@ -18947,13 +18947,13 @@ async function run() {
         if (currentBranch === deploymentBranch) {
             throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
         }
-        const gitRepoPath = process.cwd();
+        const workingDir = process.cwd();
         // 2- Create a temporary dir and clone the repo there
-        await (0, exec_1.exec)(`git clone ${gitRepositoryUrl} ${constants_1.tempPath}`);
+        await execGitInTempPath(`clone ${gitRepositoryUrl} .`);
         /**
-         * Folder on the "orphan branch" where docs will be put
+         * Base folder on the "orphan branch" where docs will be put
          */
-        const gitDocsFolder = path.join(constants_1.tempPath, constants_1.DOCS_FOLDER);
+        const gitDocsBasePath = path.join(constants_1.tempPath, constants_1.DOCS_FOLDER);
         // 3- Switch to the deployment branch
         if ((await execGitInTempPath(`switch ${deploymentBranch}`, undefined, {
             ignoreReturnCode: true,
@@ -18961,7 +18961,7 @@ async function run() {
             // If the switch fails, we will create a new orphan branch
             await execGitInTempPath(`switch --orphan ${deploymentBranch}`);
             // Then we initialize stuff
-            fs.mkdirSync(gitDocsFolder);
+            fs.mkdirSync(gitDocsBasePath);
             const emptyMetadata = {
                 actionVersion: METADATA_VERSION_LATEST,
                 versions: [],
@@ -18982,7 +18982,7 @@ async function run() {
             metadataFile.actionVersion = 2;
             metadataFile.versions = metadataFile.versions.map((v) => ({
                 ...v,
-                path: path.join(gitDocsFolder, v.id),
+                path: path.join(constants_1.DOCS_FOLDER, v.id),
             }));
         }
         // 4- Run the command to create the documentation
@@ -18998,18 +18998,18 @@ async function run() {
             /**
              * Folder on the orphaned branch where the docs for this version will be put
              */
-            const versionedDocsPath = path.join(gitDocsFolder, version);
+            const gitDocsAbsolutePath = path.join(gitDocsBasePath, version);
             /**
              * Folder on the repo where the built docs are located
              */
-            const builtDocsPath = path.join(gitRepoPath, docsRelativePath);
+            const docsPath = path.join(workingDir, docsRelativePath);
             // 6- Create a new version based on the version variable.
-            fs.mkdirSync(versionedDocsPath, {
+            fs.mkdirSync(gitDocsAbsolutePath, {
                 recursive: true,
             });
             // 7- Copy the files to the new version
-            core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
-            await (0, io_1.cp)(builtDocsPath, versionedDocsPath, {
+            core.info(`Copying docs from ${docsPath} to ${gitDocsAbsolutePath}`);
+            await (0, io_1.cp)(docsPath, gitDocsAbsolutePath, {
                 recursive: true,
                 copySourceDirectory: false,
             });
@@ -19017,7 +19017,7 @@ async function run() {
             metadataFile.versions.unshift({
                 id: version,
                 releaseTimestamp: new Date().getTime(),
-                path: versionedDocsPath,
+                path: gitDocsAbsolutePath.replace(gitDocsBasePath, ''),
             });
         }
         else if (strategy === 'lerna') {
@@ -19025,20 +19025,20 @@ async function run() {
             for (const p of packages) {
                 core.info(`Working on ${p.name} - ${p.location}`);
                 /**
-                 * Folder on the orphaned branch where the docs for this version will be put
+                 * Folder where the built docs for this package will be found
                  */
-                const builtDocsPath = path.join(gitRepoPath, p.location.replace(gitRepoPath, ''), docsRelativePath);
+                const docsPath = path.join(p.location, docsRelativePath);
                 /**
                  * Folder on the orphaned branch where the docs for this version will be put
                  */
-                const versionedDocsPath = path.join(gitDocsFolder, p.name, p.version);
+                const gitDocsAbsolutePath = path.join(gitDocsBasePath, p.name, p.version);
                 // 6- Create a new version based on the version variable.
-                fs.mkdirSync(versionedDocsPath, {
+                fs.mkdirSync(gitDocsAbsolutePath, {
                     recursive: true,
                 });
                 // 7- Copy the files to the new version
-                core.info(`Copying docs from ${builtDocsPath} to ${versionedDocsPath}`);
-                await (0, io_1.cp)(builtDocsPath, versionedDocsPath, {
+                core.info(`Copying docs from ${docsPath} to ${gitDocsAbsolutePath}`);
+                await (0, io_1.cp)(docsPath, gitDocsAbsolutePath, {
                     recursive: true,
                     copySourceDirectory: false,
                 });
@@ -19046,7 +19046,7 @@ async function run() {
                 metadataFile.versions.unshift({
                     id: p.version,
                     releaseTimestamp: new Date().getTime(),
-                    path: versionedDocsPath,
+                    path: gitDocsAbsolutePath.replace(gitDocsBasePath, ''),
                     packageName: p.name,
                 });
             }
@@ -19060,6 +19060,7 @@ async function run() {
             metadataFile,
             versionSorting,
             enablePrereleases,
+            persistDir: constants_1.tempPath,
         });
         // 12- Commit && push
         await execGitInTempPath(`config --local user.name "gh-actions"`);
@@ -19252,7 +19253,7 @@ Handlebars.registerHelper('ifeq', function (a, b, options) {
     }
     return options.inverse(this);
 });
-function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, workingDir = process.cwd(), versionSorting = 'timestamp-desc', enablePrereleases = false, }) {
+function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, persistDir = process.cwd(), versionSorting = 'timestamp-desc', enablePrereleases = false, }) {
     const packages = {};
     metadataFile.versions.forEach((v) => {
         const key = v.packageName || 'default';
@@ -19268,10 +19269,10 @@ function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, wo
     });
     Object.entries(packages).forEach(([_, pkg]) => {
         pkg.versions = (0, utils_1.sortVersions)(pkg.versions, versionSorting);
-        pkg.latestVersion = (0, utils_1.sortVersions)(pkg.versions, 'semver-desc')[0];
+        pkg.latestVersion = (0, utils_1.sortVersions)(pkg.versions, 'timestamp-desc')[0];
         if (pkg.prereleaseVersions) {
             pkg.prereleaseVersions = (0, utils_1.sortVersions)(pkg.prereleaseVersions, versionSorting);
-            pkg.latestPrereleaseVersion = (0, utils_1.sortVersions)(pkg.prereleaseVersions, 'semver-desc')[0];
+            pkg.latestPrereleaseVersion = (0, utils_1.sortVersions)(pkg.prereleaseVersions, 'timestamp-desc')[0];
         }
     });
     // 11 - Compile index.html
@@ -19282,7 +19283,7 @@ function compileAndPersistHomepage({ repository, repositoryUrl, metadataFile, wo
     };
     const homepageCompiler = Handlebars.compile(homepage_hbs_1.default, { noEscape: true });
     const homepage = homepageCompiler(data);
-    fs_1.default.writeFileSync(path_1.default.join(workingDir, constants_1.INDEX_FILE), homepage, 'utf-8');
+    fs_1.default.writeFileSync(path_1.default.join(persistDir, constants_1.INDEX_FILE), homepage, 'utf-8');
 }
 exports.compileAndPersistHomepage = compileAndPersistHomepage;
 
@@ -19306,16 +19307,17 @@ const exec_1 = __nccwpck_require__(1514);
 function sortVersions(versions, strategy) {
     if (!versions || versions.length === 0)
         return versions;
+    const sortedVersions = [...versions];
     switch (strategy) {
         case 'timestamp-asc':
-            return versions.sort((a, b) => a.releaseTimestamp - b.releaseTimestamp);
+            return sortedVersions.sort((a, b) => a.releaseTimestamp - b.releaseTimestamp);
         case 'timestamp-desc':
-            return versions.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
+            return sortedVersions.sort((a, b) => b.releaseTimestamp - a.releaseTimestamp);
         case 'semver-asc':
-            return versions.sort((a, b) => semver_1.default.compareBuild(a.id, b.id));
+            return sortedVersions.sort((a, b) => semver_1.default.compareBuild(a.id, b.id));
         case 'semver-desc':
         default:
-            return versions.sort((a, b) => semver_1.default.compareBuild(b.id, a.id));
+            return sortedVersions.sort((a, b) => semver_1.default.compareBuild(b.id, a.id));
     }
 }
 exports.sortVersions = sortVersions;
@@ -19324,12 +19326,12 @@ async function execOutput(cmd) {
     return result.stdout.trim();
 }
 exports.execOutput = execOutput;
-function readMetadataFile() {
-    return JSON.parse(fs_1.default.readFileSync(constants_1.metadataFilePath, 'utf8'));
+function readMetadataFile(path = constants_1.metadataFilePath) {
+    return JSON.parse(fs_1.default.readFileSync(path, 'utf8'));
 }
 exports.readMetadataFile = readMetadataFile;
-function writeMetadataFile(contents) {
-    fs_1.default.writeFileSync(constants_1.metadataFilePath, JSON.stringify(contents), 'utf-8');
+function writeMetadataFile(contents, path = constants_1.metadataFilePath) {
+    fs_1.default.writeFileSync(path, JSON.stringify(contents), 'utf-8');
 }
 exports.writeMetadataFile = writeMetadataFile;
 
