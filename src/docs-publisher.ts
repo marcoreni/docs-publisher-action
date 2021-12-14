@@ -51,15 +51,15 @@ async function run() {
       throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
     }
 
-    const gitRepoAbsolutePath = process.cwd();
+    const workingDir = process.cwd();
 
     // 2- Create a temporary dir and clone the repo there
-    await exec(`git clone ${gitRepositoryUrl} ${gitTempPath}`);
+    await execGitInTempPath(`clone ${gitRepositoryUrl} .`);
 
     /**
-     * Folder on the "orphan branch" where docs will be put
+     * Base folder on the "orphan branch" where docs will be put
      */
-    const gitDocsAbsolutePath = path.join(gitTempPath, DOCS_FOLDER);
+    const gitDocsBasePath = path.join(gitTempPath, DOCS_FOLDER);
 
     // 3- Switch to the deployment branch
     if (
@@ -71,7 +71,7 @@ async function run() {
       await execGitInTempPath(`switch --orphan ${deploymentBranch}`);
 
       // Then we initialize stuff
-      fs.mkdirSync(gitDocsAbsolutePath);
+      fs.mkdirSync(gitDocsBasePath);
 
       const emptyMetadata: MetadataFile = {
         actionVersion: METADATA_VERSION_LATEST,
@@ -117,21 +117,21 @@ async function run() {
       /**
        * Folder on the orphaned branch where the docs for this version will be put
        */
-      const versionedDocsAbsolutePath = path.join(gitDocsAbsolutePath, version);
+      const gitDocsAbsolutePath = path.join(gitDocsBasePath, version);
 
       /**
        * Folder on the repo where the built docs are located
        */
-      const docsAbsolutePath = path.join(gitRepoAbsolutePath, docsRelativePath);
+      const docsPath = path.join(workingDir, docsRelativePath);
 
       // 6- Create a new version based on the version variable.
-      fs.mkdirSync(versionedDocsAbsolutePath, {
+      fs.mkdirSync(gitDocsAbsolutePath, {
         recursive: true,
       });
 
       // 7- Copy the files to the new version
-      core.info(`Copying docs from ${docsAbsolutePath} to ${versionedDocsAbsolutePath}`);
-      await cp(docsAbsolutePath, versionedDocsAbsolutePath, {
+      core.info(`Copying docs from ${docsPath} to ${gitDocsAbsolutePath}`);
+      await cp(docsPath, gitDocsAbsolutePath, {
         recursive: true,
         copySourceDirectory: false,
       });
@@ -140,36 +140,31 @@ async function run() {
       metadataFile.versions.unshift({
         id: version,
         releaseTimestamp: new Date().getTime(),
-        path: versionedDocsAbsolutePath.replace(gitDocsAbsolutePath, ''),
+        path: gitDocsAbsolutePath.replace(gitDocsBasePath, ''),
       });
     } else if (strategy === 'lerna') {
       const packages = await lernaStrategy(metadataFile);
 
       for (const p of packages) {
         core.info(`Working on ${p.name} - ${p.location}`);
-        const packageRelativePath = p.location.replace(gitRepoAbsolutePath, '');
         /**
-         * Folder on the orphaned branch where the docs for this version will be put
+         * Folder where the built docs for this package will be found
          */
-        const docsAbsolutePath = path.join(
-          gitRepoAbsolutePath,
-          packageRelativePath,
-          docsRelativePath,
-        );
+        const docsPath = path.join(p.location, docsRelativePath);
 
         /**
          * Folder on the orphaned branch where the docs for this version will be put
          */
-        const versionedDocsAbsolutePath = path.join(gitDocsAbsolutePath, p.name, p.version);
+        const gitDocsAbsolutePath = path.join(gitDocsBasePath, p.name, p.version);
 
         // 6- Create a new version based on the version variable.
-        fs.mkdirSync(versionedDocsAbsolutePath, {
+        fs.mkdirSync(gitDocsAbsolutePath, {
           recursive: true,
         });
 
         // 7- Copy the files to the new version
-        core.info(`Copying docs from ${docsAbsolutePath} to ${versionedDocsAbsolutePath}`);
-        await cp(docsAbsolutePath, versionedDocsAbsolutePath, {
+        core.info(`Copying docs from ${docsPath} to ${gitDocsAbsolutePath}`);
+        await cp(docsPath, gitDocsAbsolutePath, {
           recursive: true,
           copySourceDirectory: false,
         });
@@ -178,7 +173,7 @@ async function run() {
         metadataFile.versions.unshift({
           id: p.version,
           releaseTimestamp: new Date().getTime(),
-          path: versionedDocsAbsolutePath.replace(gitDocsAbsolutePath, ''),,
+          path: gitDocsAbsolutePath.replace(gitDocsBasePath, ''),
           packageName: p.name,
         });
       }
@@ -195,7 +190,7 @@ async function run() {
       metadataFile,
       versionSorting,
       enablePrereleases,
-      workingDir: gitTempPath,
+      persistDir: gitTempPath,
     });
 
     // 12- Commit && push
