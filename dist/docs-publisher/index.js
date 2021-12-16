@@ -18992,17 +18992,8 @@ async function run() {
         catch (error) {
             throw new Error(`Documentation creation failed with error: ${error.message}`);
         }
-        // Decide which packages must be published
-        if (strategy === 'tag') {
-            const version = await (0, utils_1.execOutput)('git describe --tags');
-            /**
-             * Folder on the orphaned branch where the docs for this version will be put
-             */
-            const gitDocsAbsolutePath = path.join(gitDocsBasePath, version);
-            /**
-             * Folder on the repo where the built docs are located
-             */
-            const docsPath = path.join(workingDir, docsRelativePath);
+        const doWork = async (docsPath, version, packageName) => {
+            const gitDocsAbsolutePath = path.join(gitDocsBasePath, packageName ?? '', version);
             // 6- Create a new version based on the version variable.
             fs.mkdirSync(gitDocsAbsolutePath, {
                 recursive: true,
@@ -19017,38 +19008,28 @@ async function run() {
             metadataFile.versions.unshift({
                 id: version,
                 releaseTimestamp: new Date().getTime(),
-                path: gitDocsAbsolutePath.replace(gitDocsBasePath, ''),
+                path: gitDocsAbsolutePath.replace(constants_1.tempPath, ''),
+                packageName: packageName,
             });
+        };
+        if (strategy === 'tag') {
+            const version = await (0, utils_1.execOutput)('git describe --tags');
+            /**
+             * Folder on the repo where the built docs are located
+             */
+            const docsPath = path.join(workingDir, docsRelativePath);
+            doWork(docsPath, version);
         }
         else if (strategy === 'lerna') {
+            // Decide which packages must be published
             const packages = await (0, lerna_1.lernaStrategy)(metadataFile);
             for (const p of packages) {
                 core.info(`Working on ${p.name} - ${p.location}`);
                 /**
-                 * Folder where the built docs for this package will be found
+                 * Folder where the built docs for this package are located
                  */
                 const docsPath = path.join(p.location, docsRelativePath);
-                /**
-                 * Folder on the orphaned branch where the docs for this version will be put
-                 */
-                const gitDocsAbsolutePath = path.join(gitDocsBasePath, p.name, p.version);
-                // 6- Create a new version based on the version variable.
-                fs.mkdirSync(gitDocsAbsolutePath, {
-                    recursive: true,
-                });
-                // 7- Copy the files to the new version
-                core.info(`Copying docs from ${docsPath} to ${gitDocsAbsolutePath}`);
-                await (0, io_1.cp)(docsPath, gitDocsAbsolutePath, {
-                    recursive: true,
-                    copySourceDirectory: false,
-                });
-                // 8- Create the new version inside versions.json
-                metadataFile.versions.unshift({
-                    id: p.version,
-                    releaseTimestamp: new Date().getTime(),
-                    path: gitDocsAbsolutePath.replace(gitDocsBasePath, ''),
-                    packageName: p.name,
-                });
+                doWork(docsPath, p.version, p.name);
             }
         }
         // 9- TBD: cleanup old versions?
