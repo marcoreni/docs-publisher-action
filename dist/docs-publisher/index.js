@@ -19018,7 +19018,7 @@ async function run() {
              * Folder on the repo where the built docs are located
              */
             const docsPath = path.join(workingDir, docsRelativePath);
-            doWork(docsPath, version);
+            await doWork(docsPath, version);
         }
         else if (strategy === 'lerna') {
             // Decide which packages must be published
@@ -19029,7 +19029,7 @@ async function run() {
                  * Folder where the built docs for this package are located
                  */
                 const docsPath = path.join(p.location, docsRelativePath);
-                doWork(docsPath, p.version, p.name);
+                await doWork(docsPath, p.version, p.name);
             }
         }
         // 9- TBD: cleanup old versions?
