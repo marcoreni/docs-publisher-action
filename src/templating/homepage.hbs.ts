@@ -35,20 +35,20 @@ export default `<!DOCTYPE html>
               rel="nofollow" target="_blank"><i class="fab fa-github"></i> Source code</a>
             {{#each packages}}
               {{#ifeq @key "default" }}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                <a class="btn btn-outline-light btn-lg m-2" href="{{relativepath this.latestVersion.path }}/"
                   role="button">Latest ({{this.latestVersion.id}}) docs</a>
               {{else}}
-                <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestVersion.path}}/"
+                <a class="btn btn-outline-light btn-lg m-2" href="{{relativepath this.latestVersion.path }}/"
                   role="button">Latest {{this.latestVersion.packageName}} ({{this.latestVersion.id}}) docs</a>
               {{/ifeq}}
             {{/each}}
             {{#each packages}}
               {{#if this.latestPrereleaseVersion }}
                 {{#ifeq @key "default" }}
-                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestPrereleaseVersion.path}}/"
+                  <a class="btn btn-outline-light btn-lg m-2" href="{{relativepath this.latestPrereleaseVersion.path}}/"
                     role="button">Latest prerelease ({{this.latestPrereleaseVersion.id}}) docs</a>
                 {{else}}
-                  <a class="btn btn-outline-light btn-lg m-2" href="./{{this.latestPrereleaseVersion.path}}/"
+                  <a class="btn btn-outline-light btn-lg m-2" href="{{relativepath this.latestPrereleaseVersion.path}}/"
                     role="button">Latest {{this.latestPrereleaseVersion.packageName}} prerelease ({{this.latestPrereleaseVersion.id}}) docs</a>
                 {{/ifeq}}
               {{/if}}
@@ -75,7 +75,7 @@ export default `<!DOCTYPE html>
               {{/if}}
               <ul class="list-group list-group-flush">
                 {{#each p.versions as |v| }}
-                  <li class="list-group-item"><a class="text-body" href="./{{v.path}}/">{{v.id}} (released on: {{prettifyDate v.releaseTimestamp}})</a></li>
+                  <li class="list-group-item"><a class="text-body" href="{{relativepath v.path }}/">{{v.id}} (released on: {{prettifyDate v.releaseTimestamp}})</a></li>
                 {{/each}}
               </ul>
             </div>
@@ -84,10 +84,10 @@ export default `<!DOCTYPE html>
                 <h4 class="mb-1 text-center text-dark"><strong>Prereleases</strong></h4>
                 <ul class="list-group list-group-flush">
                   {{#each p.prereleaseVersions as |pv| }}
-                    <li class="list-group-item"><a class="text-body" href="./{{pv.path}}/">{{pv.id}} (released on: {{prettifyDate pv.releaseTimestamp}})</a></li>
+                    <li class="list-group-item"><a class="text-body" href="{{relativepath pv.path }}/">{{pv.id}} (released on: {{prettifyDate pv.releaseTimestamp}})</a></li>
                   {{/each}}
                 </ul>
-              </div> 
+              </div>
             {{/if}}
           </div>
         {{/each}}

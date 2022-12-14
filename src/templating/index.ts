@@ -17,6 +17,14 @@ Handlebars.registerHelper('ifeq', function (this: any, a, b, options) {
   return options.inverse(this);
 });
 
+Handlebars.registerHelper('relativepath', function (value: string) {
+  if (value.startsWith('/')) {
+    return `.${value}`;
+  }
+
+  return `./${value}`;
+});
+
 export function compileAndPersistHomepage({
   repository,
   repositoryUrl,
