@@ -1,8 +1,4 @@
-const { Plugin } = require('release-it');
-const fs = require('fs');
-const path = require('path');
-const execa = require('execa');
-
+import { Plugin } from 'release-it';
 
 const prompts = {
   publish: {
