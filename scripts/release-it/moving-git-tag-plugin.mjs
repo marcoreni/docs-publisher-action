@@ -49,4 +49,4 @@ class MovingGitTagPlugin extends Plugin {
   }
 }
 
-module.exports = MovingGitTagPlugin;
+export default MovingGitTagPlugin;
