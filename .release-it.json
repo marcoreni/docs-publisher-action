@@ -13,7 +13,7 @@
     "publish": false
   },
   "plugins": {
-    "./scripts/release-it/moving-git-tag-plugin.js": {
+    "./scripts/release-it/moving-git-tag-plugin.mjs": {
       "key": "value"
     }
   }
