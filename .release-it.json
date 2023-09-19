@@ -1,6 +1,6 @@
 {
   "hooks": {
-    "after:init": ["npm run all"]
+    "after:init": ["pnpm run all"]
   }, 
   "git": {
     "commitMessage": "v${version}",

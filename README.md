@@ -106,7 +106,7 @@ There is no way to test the action locally, so you should have a repository wher
 ### Release a new version
 
 1. Configure a `.env` file with the GITHUB_TOKEN variable. The PAT needs to have `repo` permissions on the Github Repo.
-2. Run `npm run release`
+2. Run `pnpm run release`
 
 ## Recover function
 
