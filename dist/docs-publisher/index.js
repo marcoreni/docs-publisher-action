@@ -22417,6 +22417,9 @@ async function run() {
             const docsPath = path.join(workingDir, docsRelativePath);
             await doWork(docsPath, version);
         }
+        else if (strategy === 'package') {
+          
+        }
         else if (strategy === 'lerna') {
             // Decide which packages must be published
             const packages = await (0, lerna_1.lernaStrategy)(metadataFile);

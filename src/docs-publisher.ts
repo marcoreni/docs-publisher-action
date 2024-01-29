@@ -10,6 +10,7 @@ import { DOCS_FOLDER, MetadataFile, metadataFilePath, tempPath as gitTempPath } 
 import { compileAndPersistHomepage } from './templating';
 import { execOutput, readMetadataFile, writeMetadataFile } from './utils';
 import { lernaStrategy } from './strategies/lerna';
+import { packageStrategy } from './strategies/package';
 
 const METADATA_VERSION_LATEST = 2;
 
@@ -136,6 +137,14 @@ async function run() {
 
     if (strategy === 'tag') {
       const version = await execOutput('git describe --tags');
+      /**
+       * Folder on the repo where the built docs are located
+       */
+      const docsPath = path.join(workingDir, docsRelativePath);
+
+      await doWork(docsPath, version);
+    } else if (strategy === 'package') {
+      const version = await packageStrategy(metadataFile);
       /**
        * Folder on the repo where the built docs are located
        */
