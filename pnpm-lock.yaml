@@ -25,7 +25,7 @@ dependencies:
     version: 4.7.8
   semver:
     specifier: ^7.5.4
-    version: 7.5.4
+    version: 7.6.0
   semver-sort:
     specifier: ^1.0.0
     version: 1.0.0
@@ -39,7 +39,7 @@ devDependencies:
     version: 20.6.2
   '@types/semver':
     specifier: ^7.5.2
-    version: 7.5.2
+    version: 7.5.8
   '@types/semver-sort':
     specifier: 0.0.1
     version: 0.0.1
@@ -451,8 +451,8 @@ packages:
     resolution: {integrity: sha512-abYNwum55FpJWDxcWjT1eNI3J5/KXS7cWY7KUgbr/l/vn/5vaB1ejUpipLPZba8BvdbJBAJCWIXfJYZvc4SwTA==}
     dev: true
 
-  /@types/semver@7.5.2:
-    resolution: {integrity: sha512-7aqorHYgdNO4DM36stTiGO3DvKoex9TQRwsJU6vMaFGyqpBA1MNZkz+PG3gaNUPpTAOYhT1WR7M1JyA3fbS9Cw==}
+  /@types/semver@7.5.8:
+    resolution: {integrity: sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==}
     dev: true
 
   /@vercel/ncc@0.38.0:
@@ -2226,7 +2226,7 @@ packages:
       got: 12.6.1
       registry-auth-token: 5.0.2
       registry-url: 6.0.1
-      semver: 7.5.4
+      semver: 7.6.0
     dev: true
 
   /parent-module@1.0.1:
@@ -2539,7 +2539,7 @@ packages:
     resolution: {integrity: sha512-0Ju4+6A8iOnpL/Thra7dZsSlOHYAHIeMxfhWQRI1/VLcT3WDBZKKtQt/QkBOsiIN9ZpuvHE6cGZ0x4glCMmfiA==}
     engines: {node: '>=12'}
     dependencies:
-      semver: 7.5.4
+      semver: 7.6.0
     dev: true
 
   /semver-regex@3.1.4:
@@ -2562,6 +2562,14 @@ packages:
 
   /semver@7.5.4:
     resolution: {integrity: sha512-1bCSESV6Pv+i21Hvpxp3Dx+pSD8lIPt8uVjRrxAUt/nbswYc+tK6Y2btiULjd4+fnq15PX+nqQDC7Oft7WkwcA==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      lru-cache: 6.0.0
+    dev: true
+
+  /semver@7.6.0:
+    resolution: {integrity: sha512-EnwXhrlwXMk9gKu5/flx5sv/an57AkRplG3hTK68W7FRDN+k+OWBj65M7719OkA82XLBxrcX0KSHj+X5COhOVg==}
     engines: {node: '>=10'}
     hasBin: true
     dependencies:
@@ -2940,7 +2948,7 @@ packages:
       is-yarn-global: 0.4.1
       latest-version: 7.0.0
       pupa: 3.1.0
-      semver: 7.5.4
+      semver: 7.6.0
       semver-diff: 4.0.0
       xdg-basedir: 5.1.0
     dev: true
