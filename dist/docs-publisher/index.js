@@ -40937,7 +40937,8 @@ async function run() {
             });
         };
         if (strategy === 'tag') {
-            const version = await (0, utils_1.execOutput)('git fetch --tags && git describe --tags');
+            await (0, exec_1.exec)('git fetch --tags');
+            const version = await (0, utils_1.execOutput)('git describe --tags');
             /**
              * Folder on the repo where the built docs are located
              */
