@@ -136,7 +136,7 @@ async function run() {
     };
 
     if (strategy === 'tag') {
-      const version = await execOutput('git describe --tags');
+      const version = await execOutput('git fetch --tags && git describe --tags');
       /**
        * Folder on the repo where the built docs are located
        */
