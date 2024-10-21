@@ -30,8 +30,7 @@ inputs:
       - `semver-desc`: sorts by semver descending.
       - `semver-asc`: sorts by semver ascending.
       - `timestamp-desc`: sorts by release timestamp (based on the run that generated a specific build) descending.
-      - `timestamp-asc`: sorts by release timestamp (based on the run that generated a specific build) ascending.
-    "
+      - `timestamp-asc`: sorts by release timestamp (based on the run that generated a specific build) ascending."
     default: 'timestamp-desc'
   enable-prereleases: 
     required: true
