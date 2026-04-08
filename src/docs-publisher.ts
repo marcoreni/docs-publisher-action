@@ -1,16 +1,21 @@
-import * as core from '@actions/core';
-import * as github from '@actions/github';
+import { debug, info, getInput, setFailed } from '@actions/core';
+import { context } from '@actions/github';
 import { cp } from '@actions/io';
 import { exec, ExecOptions } from '@actions/exec';
 
-import * as fs from 'fs';
-import * as path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 
-import { DOCS_FOLDER, MetadataFile, metadataFilePath, tempPath as gitTempPath } from './constants';
-import { compileAndPersistHomepage } from './templating';
-import { execOutput, readMetadataFile, writeMetadataFile } from './utils';
-import { lernaStrategy } from './strategies/lerna';
-import { packageStrategy } from './strategies/package';
+import {
+  DOCS_FOLDER,
+  MetadataFile,
+  metadataFilePath,
+  tempPath as gitTempPath,
+} from './constants.js';
+import { compileAndPersistHomepage } from './templating/index.js';
+import { execOutput, readMetadataFile, writeMetadataFile } from './utils.js';
+import { lernaStrategy } from './strategies/lerna.js';
+import { packageStrategy } from './strategies/package.js';
 
 const METADATA_VERSION_LATEST = 2;
 
@@ -25,15 +30,15 @@ async function run() {
     // Inputs
     const currentCommit = process.env.GITHUB_SHA;
     const currentBranch = await execOutput(`git branch --show-current`);
-    const deploymentBranch = core.getInput('deployment-branch');
-    const strategy = core.getInput('strategy');
-    const versionSorting = core.getInput('versions-sorting');
-    const enablePrereleases = core.getInput('enable-prereleases').toLowerCase() === 'true';
+    const deploymentBranch = getInput('deployment-branch');
+    const strategy = getInput('strategy');
+    const versionSorting = getInput('versions-sorting');
+    const enablePrereleases = getInput('enable-prereleases').toLowerCase() === 'true';
 
-    const command = core.getInput('docs-command');
-    const docsRelativePath = core.getInput('docs-path');
+    const command = getInput('docs-command');
+    const docsRelativePath = getInput('docs-path');
 
-    core.debug(`Inputs:
+    debug(`Inputs:
       - command: ${command},
       - docs-path: ${docsRelativePath},
       - deployment-branch: ${deploymentBranch},
@@ -41,12 +46,12 @@ async function run() {
       - enable-prereleases: ${enablePrereleases},
     `);
 
-    const repository = github.context.repo.repo;
-    const repositoryUrl = `https://github.com/${github.context.repo.owner}/${repository}`;
+    const repository = context.repo.repo;
+    const repositoryUrl = `https://github.com/${context.repo.owner}/${repository}`;
 
     const gitUsername = 'x-access-token';
-    const gitPassword = core.getInput('token');
-    const gitRepositoryUrl = `https://${gitUsername}:${gitPassword}@github.com/${github.context.repo.owner}/${repository}.git`;
+    const gitPassword = getInput('token');
+    const gitRepositoryUrl = `https://${gitUsername}:${gitPassword}@github.com/${context.repo.owner}/${repository}.git`;
 
     if (currentBranch === deploymentBranch) {
       throw new Error('Sorry, you cannot deploy documentation in the active workflow branch');
@@ -120,7 +125,7 @@ async function run() {
       });
 
       // 7- Copy the files to the new version
-      core.info(`Copying docs from ${docsPath} to ${gitDocsAbsolutePath}`);
+      info(`Copying docs from ${docsPath} to ${gitDocsAbsolutePath}`);
       await cp(docsPath, gitDocsAbsolutePath, {
         recursive: true,
         copySourceDirectory: false,
@@ -156,7 +161,7 @@ async function run() {
       const packages = await lernaStrategy(metadataFile);
 
       for (const p of packages) {
-        core.info(`Working on ${p.name} - ${p.location}`);
+        info(`Working on ${p.name} - ${p.location}`);
 
         /**
          * Folder where the built docs for this package are located
@@ -191,7 +196,7 @@ async function run() {
 
     await execGitInTempPath(`push --set-upstream origin ${deploymentBranch}`);
   } catch (err: any) {
-    core.setFailed(err.message);
+    setFailed(err.message);
   }
 }
 

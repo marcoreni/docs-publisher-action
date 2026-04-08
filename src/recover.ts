@@ -2,11 +2,11 @@
  * This is just a sample script that creates a metadata.json file
  * based on a list of folders.
  */
-import fs from 'fs';
-import path from 'path';
-import { DOCS_FOLDER, MetadataFile } from './constants';
-import { compileAndPersistHomepage } from './templating';
-import { readMetadataFile, writeMetadataFile } from './utils';
+import fs from 'node:fs';
+import path from 'node:path';
+import { DOCS_FOLDER, MetadataFile } from './constants.js';
+import { compileAndPersistHomepage } from './templating/index.js';
+import { readMetadataFile, writeMetadataFile } from './utils.js';
 
 async function run() {
   const folder = process.argv[2];

@@ -1,10 +1,10 @@
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 import * as Handlebars from 'handlebars';
 import semver from 'semver';
-import { INDEX_FILE, MetadataFile } from '../constants';
-import { sortVersions } from '../utils';
-import homepageTemplate from './homepage.hbs';
+import { INDEX_FILE, MetadataFile } from '../constants.js';
+import { sortVersions } from '../utils.js';
+import homepageTemplate from './homepage.hbs.js';
 
 Handlebars.registerHelper('prettifyDate', function (timestamp: number) {
   return new Date(timestamp).toLocaleString('it-IT');

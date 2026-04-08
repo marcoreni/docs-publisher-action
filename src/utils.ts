@@ -1,7 +1,7 @@
-import fs from 'fs';
+import fs from 'node:fs';
 
 import semver from 'semver';
-import { MetadataFile, metadataFilePath } from './constants';
+import { MetadataFile, metadataFilePath } from './constants.js';
 import { getExecOutput } from '@actions/exec';
 
 type IndexStrategy = 'timestamp-asc' | 'timestamp-desc' | 'semver-asc' | 'semver-desc' | string;

@@ -1,6 +1,5 @@
-import * as core from '@actions/core';
-import { MetadataFile } from '../constants';
-import { execOutput, readMetadataFile } from '../utils';
+import { MetadataFile } from '../constants.js';
+import { execOutput } from '../utils.js';
 
 export async function lernaStrategy(metadataFile: MetadataFile): Promise<
   {

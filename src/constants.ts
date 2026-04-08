@@ -1,6 +1,6 @@
-import { mkdtempSync } from 'fs';
-import { tmpdir } from 'os';
-import path from 'path';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 
 export const DOCS_FOLDER = 'docs';
 export const INDEX_FILE = 'index.html';
