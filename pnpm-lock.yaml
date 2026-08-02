@@ -41,7 +41,7 @@ importers:
         version: 24.13.2
       '@types/semver':
         specifier: ^7.7.1
-        version: 7.7.1
+        version: 7.8.0
       '@types/semver-sort':
         specifier: 0.0.5
         version: 0.0.5
@@ -310,8 +310,8 @@ packages:
   '@types/semver-sort@0.0.5':
     resolution: {integrity: sha512-cIQG7kjdzHcsRrYYkP8N65BogntqItjMjG8uSgPEl1ej4dKj9QC8snCFJb3HHF/Cwqe0s0IflJjUU5wb1yrLDQ==}
 
-  '@types/semver@7.7.1':
-    resolution: {integrity: sha512-FmgJfu+MOcQ370SD0ev7EI8TlCAfKYU+B4m5T3yXc1CiRN94g/SZPtsCkk506aUDtlMnFZvasDwHHUcZUEaYuA==}
+  '@types/semver@7.8.0':
+    resolution: {integrity: sha512-1mAINjtQCXXeLkJ9ehXkwOcBpqtLxiVtKhpUf83DdRNdQKV0iXZpaHYqRr7nj+wvxuJzoAmAwXI+sCNMv1CzLQ==}
 
   '@vercel/ncc@0.44.0':
     resolution: {integrity: sha512-pHyI+bZokSgIscTKFSmpNk5vZzmOrb9RW0Vu4SRyqUvkJ0kgg3PzaZLLDVTFXhbUiCqg0/Eu8L4fKtgViA92kg==}
@@ -1183,7 +1183,7 @@ snapshots:
 
   '@types/semver-sort@0.0.5': {}
 
-  '@types/semver@7.7.1': {}
+  '@types/semver@7.8.0': {}
 
   '@vercel/ncc@0.44.0': {}
 
