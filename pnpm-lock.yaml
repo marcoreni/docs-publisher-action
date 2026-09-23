@@ -50,7 +50,7 @@ importers:
         version: 0.44.0
       prettier:
         specifier: ^3.8.1
-        version: 3.9.3
+        version: 3.9.9
       release-it:
         specifier: ^20.0.0
         version: 20.2.1(@types/node@24.13.2)
@@ -731,8 +731,8 @@ packages:
     resolution: {integrity: sha512-ZlsFlG7MtSFCoc5xreOvBAozCJ6Pf06opgJjh9ONEv418xpZSAzNjstD36C6+JwOnfSqOW/9uDkqKjezTdxZhw==}
     engines: {node: '>=20'}
 
-  prettier@3.9.3:
-    resolution: {integrity: sha512-HWmu+K+zvHNpaMfSnYeqdqrDbR16cuIXaPx8WoHaviQkDJh1/0BNtOZmHVQI5jc3wXv0H1yXc9wjvFdXh+n3hQ==}
+  prettier@3.9.9:
+    resolution: {integrity: sha512-Z/CJHIkdujO/OtN7nXUii0Rf3VT5SRuhjBA82Xvu2XhBUgX3nhP67T0LHceBdQLex7OOFGTox+Q5Yg8Jk2Qivg==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -1564,7 +1564,7 @@ snapshots:
 
   powershell-utils@0.2.0: {}
 
-  prettier@3.9.3: {}
+  prettier@3.9.9: {}
 
   protocols@2.0.2: {}
 
