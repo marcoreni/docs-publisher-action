@@ -30,7 +30,7 @@
     "semver-sort": "^1.0.0"
   },
   "devDependencies": {
-    "@tsconfig/node24": "^24.0.4",
+    "@tsconfig/node26": "^26.0.0",
     "@types/node": "^24.12.2",
     "@types/semver": "^7.7.1",
     "@types/semver-sort": "0.0.5",
